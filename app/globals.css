@@ -1,26 +1,52 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0B0F19;
+  --foreground: #F1F5F9;
+  color-scheme: dark;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-brand-bg: #0B0F19;
+  --color-brand-card: #1C1F26;
+  --color-brand-border: #2A2F3A;
+  
+  --color-brand-primary: #EA580C;
+  --color-brand-accent: #F97316;
+  --color-brand-highlight: #FDBA74;
+
+  --color-brand-text: #F1F5F9;
+  --color-brand-subtext: #94A3B8;
+  --color-brand-muted: #64748B;
+  
+  --color-state-danger: #EF4444;
+  --color-state-success: #22C55E;
+  --color-state-warning: #F59E0B;
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    @apply antialiased;
   }
-}
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  /* Scrollbar override for industrial theme */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #0B0F19;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #2A2F3A;
+    border-radius: 5px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #EA580C;
+  }
 }
