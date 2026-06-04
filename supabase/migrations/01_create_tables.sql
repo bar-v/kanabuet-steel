@@ -1,90 +1,268 @@
-    -- ==============================
-    -- 01_create_tables.sql
-    -- Deskripsi: Membuat tabel utama sesuai struktur PRD Kanabuet Steel
-    -- ==============================
+-- ============================================================
+-- Kanabuet Steel — Database Schema
+-- ============================================================
 
-    -- 1. Tabel Users (Asumsi relasi ke sistem Auth Supabase, atau berdiri sendiri untuk profil)
-    CREATE TABLE IF NOT EXISTS users (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        auth_id UUID, -- Relasi opsional jika menggunakan auth.users dari Supabase
-        name TEXT NOT NULL,
-        role TEXT CHECK (role IN ('owner', 'supervisor')) DEFAULT 'supervisor',
-        email TEXT UNIQUE NOT NULL,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-    );
+-- ── Enum Types ──────────────────────────────────────────────
 
-    -- 2. Tabel Projects
-    CREATE TABLE IF NOT EXISTS projects (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        name TEXT NOT NULL,
-        client_name TEXT NOT NULL,
-        client_phone TEXT,
-        description TEXT,
-        status TEXT CHECK (status IN ('planning', 'in_progress', 'completed', 'cancelled')) DEFAULT 'planning',
-        start_date DATE,
-        end_date DATE,
-        address TEXT,
-        raw_address TEXT,
-        latitude FLOAT,
-        longitude FLOAT,
-        geocode_latitude FLOAT,
-        geocode_longitude FLOAT,
-        supervisor_id UUID REFERENCES users(id) ON DELETE SET NULL,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-        updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-    );
+CREATE TYPE system_role AS ENUM (
+    'owner',
+    'supervisor'
+);
 
-    -- 3. Tabel Project Progress (Monitoring Progres Proyek & Dokumentasi Foto)
-    CREATE TABLE IF NOT EXISTS project_progress (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
-        update_date DATE DEFAULT CURRENT_DATE,
-        percentage INT CHECK (percentage >= 0 AND percentage <= 100),
-        notes TEXT,
-        photo_path TEXT, -- URL dari Supabase Storage
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-    );
+CREATE TYPE project_status AS ENUM (
+    'menunggu_validasi',
+    'aktif',
+    'tertunda',
+    'selesai'
+);
 
-    -- 4. Tabel Materials (Inventaris Utama Bengkel)
-    CREATE TABLE IF NOT EXISTS materials (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        name TEXT NOT NULL,
-        unit TEXT NOT NULL,
-        initial_stock INT DEFAULT 0,
-        remaining_stock INT DEFAULT 0,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-        updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-    );
+-- ── Tables ───────────────────────────────────────────────────
 
-    -- 5. Tabel Material Usage (Penggunaan Material di Lapangan)
-    CREATE TABLE IF NOT EXISTS material_usage (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
-        material_id UUID REFERENCES materials(id) ON DELETE RESTRICT,
-        amount_used INT NOT NULL CHECK (amount_used > 0),
-        usage_date DATE DEFAULT CURRENT_DATE,
-        notes TEXT,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-    );
+-- Tabel pengguna sistem (owner & supervisor)
+CREATE TABLE users (
+    user_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    
+    fullname VARCHAR(100) NOT NULL,
+    
+    email VARCHAR(100) UNIQUE NOT NULL,
+    
+    password_hash TEXT NOT NULL,
+    
+    system_role system_role NOT NULL,
 
-    -- 6. Tabel Receipts (Arsip Bon Digital)
-    CREATE TABLE IF NOT EXISTS receipts (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
-        store_name TEXT NOT NULL,
-        purchase_date DATE DEFAULT CURRENT_DATE,
-        total_cost NUMERIC(12,2) NOT NULL,
-        photo_path TEXT NOT NULL, -- URL dari Supabase Storage
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-    );
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    
+    created_at TIMESTAMP DEFAULT NOW(),
+    
+    updated_at TIMESTAMP DEFAULT NOW()
+);
 
-    -- 7. Tabel Project Evaluations (Evaluasi Operasional Proyek)
-    CREATE TABLE IF NOT EXISTS project_evaluations (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        project_id UUID REFERENCES projects(id) ON DELETE CASCADE UNIQUE,
-        issues TEXT,
-        solutions TEXT,
-        notes TEXT,
-        rating INT CHECK (rating >= 1 AND rating <= 5),
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-    );
+-- Tabel proyek
+CREATE TABLE projects (
+    project_id      BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+
+    project_name    VARCHAR(150) NOT NULL,
+
+    client_name     VARCHAR(100) NOT NULL,
+
+    client_phone    VARCHAR(20),
+
+    -- Alamat teks proyek (diisi manual saat pembuatan proyek)
+    project_address TEXT NOT NULL,
+
+    -- Koordinat GPS perangkat supervisor (diambil saat validasi lokasi)
+    latitude        DECIMAL(10,8),
+
+    longitude       DECIMAL(11,8),
+
+    description     TEXT,
+
+    status          project_status NOT NULL
+                        DEFAULT 'menunggu_validasi',
+
+    start_date      DATE,
+
+    estimated_finish DATE,
+
+    created_at      TIMESTAMP DEFAULT NOW()
+);
+
+-- Tabel anggota proyek
+-- Tidak terhubung ke tabel users; data pekerja disimpan langsung di sini.
+-- Dropdown pemilihan pekerja mengambil data unik dari histori tabel ini.
+CREATE TABLE project_members (
+    member_id    BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+
+    project_id   BIGINT NOT NULL
+                     REFERENCES projects(project_id)
+                     ON DELETE CASCADE,
+
+    member_name  VARCHAR(100) NOT NULL,
+
+    phone_number VARCHAR(20),
+
+    -- Jabatan dalam proyek, mis. 'Tukang Las', 'Supervisor', 'Helper'
+    project_role VARCHAR(50) NOT NULL
+);
+
+-- Tabel update progres proyek
+CREATE TABLE project_progress (
+    progress_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+
+    project_id  BIGINT NOT NULL
+                    REFERENCES projects(project_id)
+                    ON DELETE CASCADE,
+
+    -- Pengguna yang mencatat update (supervisor)
+    recorded_by BIGINT
+                    REFERENCES users(user_id)
+                    ON DELETE SET NULL,
+
+    percentage  INT NOT NULL
+                    CHECK (percentage BETWEEN 0 AND 100),
+
+    notes       TEXT,
+
+    photo_url   TEXT,
+
+    update_date DATE DEFAULT CURRENT_DATE,
+
+    created_at  TIMESTAMP DEFAULT NOW()
+);
+
+-- Tabel supplier material
+CREATE TABLE suppliers (
+    supplier_id   BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+
+    supplier_name VARCHAR(100) NOT NULL,
+
+    phone         VARCHAR(20),
+
+    address       TEXT
+);
+
+-- Tabel master material
+CREATE TABLE materials (
+    material_id   BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+
+    supplier_id   BIGINT
+                      REFERENCES suppliers(supplier_id)
+                      ON DELETE SET NULL,
+
+    material_name VARCHAR(100) NOT NULL,
+
+    category      VARCHAR(50),
+
+    unit          VARCHAR(30) NOT NULL,
+
+    current_stock INT NOT NULL
+                      DEFAULT 0
+                      CHECK (current_stock >= 0),
+
+    minimum_stock INT NOT NULL
+                      DEFAULT 0
+                      CHECK (minimum_stock >= 0),
+
+    created_at    TIMESTAMP DEFAULT NOW()
+);
+
+-- Tabel pencatatan penggunaan material per proyek
+CREATE TABLE material_usage (
+    usage_id    BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+
+    project_id  BIGINT NOT NULL
+                    REFERENCES projects(project_id)
+                    ON DELETE CASCADE,
+
+    material_id BIGINT NOT NULL
+                    REFERENCES materials(material_id)
+                    ON DELETE CASCADE,
+
+    quantity    INT NOT NULL
+                    CHECK (quantity > 0),
+
+    usage_date  DATE DEFAULT CURRENT_DATE,
+
+    notes       TEXT,
+
+    created_at  TIMESTAMP DEFAULT NOW()
+);
+
+-- Tabel restock material
+CREATE TABLE restocks (
+    restock_id  BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+
+    material_id BIGINT NOT NULL
+                    REFERENCES materials(material_id)
+                    ON DELETE CASCADE,
+
+    supplier_id BIGINT
+                    REFERENCES suppliers(supplier_id)
+                    ON DELETE SET NULL,
+
+    performed_by BIGINT
+                    REFERENCES users(user_id)
+                    ON DELETE SET NULL,
+
+    quantity    INT NOT NULL
+                    CHECK (quantity > 0),
+
+    date        DATE DEFAULT CURRENT_DATE,
+
+    created_at  TIMESTAMP DEFAULT NOW()
+);
+
+
+-- ── Functions ─────────────────────────────────────────────────
+
+-- Function: Validasi stok sebelum insert penggunaan material
+CREATE OR REPLACE FUNCTION check_material_stock()
+RETURNS TRIGGER AS $$
+DECLARE
+    available_stock INT;
+BEGIN
+    SELECT current_stock
+    INTO available_stock
+    FROM materials
+    WHERE material_id = NEW.material_id;
+
+    IF NEW.quantity > available_stock THEN
+        RAISE EXCEPTION
+        'Stok material tidak mencukupi. Stok tersedia: %, diminta: %',
+        available_stock, NEW.quantity;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function: Kurangi stok setelah insert penggunaan material
+CREATE OR REPLACE FUNCTION reduce_material_stock()
+RETURNS TRIGGER AS $$
+BEGIN
+
+    UPDATE materials
+    SET current_stock = current_stock - NEW.quantity
+    WHERE material_id = NEW.material_id;
+
+    RETURN NEW;
+
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function: Tambah stok setelah restock
+CREATE OR REPLACE FUNCTION increase_material_stock()
+RETURNS TRIGGER AS $$
+BEGIN
+
+    UPDATE materials
+    SET current_stock = current_stock + NEW.quantity
+    WHERE material_id = NEW.material_id;
+
+    RETURN NEW;
+
+END;
+$$ LANGUAGE plpgsql;
+
+
+-- ── Triggers ──────────────────────────────────────────────────
+
+-- Trigger: Validasi stok sebelum insert penggunaan
+CREATE TRIGGER trg_check_material_stock
+BEFORE INSERT ON material_usage
+FOR EACH ROW
+EXECUTE FUNCTION check_material_stock();
+
+-- Trigger: Kurangi stok setelah insert penggunaan
+CREATE TRIGGER trg_reduce_material_stock
+AFTER INSERT ON material_usage
+FOR EACH ROW
+EXECUTE FUNCTION reduce_material_stock();
+
+-- Trigger: Tambah stok setelah restock
+CREATE TRIGGER trg_increase_material_stock
+AFTER INSERT ON restocks
+FOR EACH ROW
+EXECUTE FUNCTION increase_material_stock();
+
+

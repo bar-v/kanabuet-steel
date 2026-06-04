@@ -1,368 +1,517 @@
-Sistem Informasi Manajemen Proyek Bengkel Las Konstruksi
+# PRD.md
+Kanabuet Steel Project Management System
 
-Project: Kanabuet Steel Project Management System
-Type: Web Application (Responsive / PWA)
+## 1. Product Overview
+Kanabuet Steel Project Management System adalah aplikasi web yang dirancang untuk membantu bengkel las konstruksi dalam mengelola proyek secara digital.
 
-1. Latar Belakang
+Sistem ini memungkinkan pemilik bengkel dan supervisor untuk:
+- mengelola data proyek
+- memantau progres pekerjaan
+- mendokumentasikan progres melalui foto
+- mengelola stok material
+- mencatat pembelian material dari supplier
+- mengarsipkan bon pembelian
+- melakukan evaluasi proyek
 
-Bengkel las konstruksi umumnya mengelola proyek secara manual menggunakan catatan kertas, pesan WhatsApp, dan dokumentasi foto yang tidak terstruktur. Hal ini menyebabkan:
+Aplikasi dirancang sebagai web responsif yang dapat digunakan melalui desktop maupun perangkat mobile sehingga supervisor dapat menginput data langsung dari lokasi proyek.
 
-Kesulitan memantau progres proyek
-Dokumentasi pekerjaan tidak terarsip dengan baik
-Penggunaan material sulit dilacak
-Evaluasi operasional proyek tidak terdokumentasi
+2. Problem Statement
+Banyak bengkel las masih mengelola proyek secara manual menggunakan catatan kertas dan komunikasi melalui aplikasi pesan.
+Masalah utama yang sering terjadi:
+- Progres proyek sulit dipantau secara sistematis
+- Dokumentasi pekerjaan tidak tersimpan dengan baik
+- Penggunaan material tidak tercatat secara terstruktur
+- Bon pembelian sering hilang atau tidak terdokumentasi
+- Evaluasi proyek tidak terdokumentasi untuk referensi berikutnyas
 
-Sistem ini dirancang untuk membantu pemilik bengkel dan supervisor dalam mengelola proyek konstruksi secara digital melalui aplikasi web.
+Akibatnya pemilik bengkel kesulitan melakukan pengawasan proyek dan evaluasi operasional.
 
-2. Tujuan Sistem
+3. Product Goals
+Tujuan utama sistem ini adalah:
+- Menyediakan sistem manajemen proyek yang terstruktur
+- Menyediakan dokumentasi proyek yang terpusat
+- Mempermudah monitoring progres pekerjaan
+- Mengelola stok material proyek
+- Menyediakan arsip digital pembelian material
+- Mendukung evaluasi proyek untuk peningkatan operasional
 
-Tujuan utama sistem:
+4. Target Users
+4.1 Owner (Pemilik Bengkel)
 
-Mengelola data proyek konstruksi
-Memantau progres proyek secara visual (foto dokumentasi)
-Mengelola penggunaan material
-Mengarsipkan bon dan dokumen proyek
-Menyediakan evaluasi operasional proyek
-Menyediakan dashboard monitoring bagi pemilik
+Tanggung jawab:
+- memonitor seluruh proyek
+- melihat laporan progres
+- melihat penggunaan material
+- mengevaluasi proyek
 
-3. Target Pengguna
-1. Owner / Pemilik Bengkel
+Kebutuhan utama:
+- dashboard proyek
+- laporan progres
+- arsip dokumentasi proyek
 
-Hak akses:
+4.2 Supervisor Lapangan
 
-Melihat seluruh proyek
-Melihat dashboard kinerja proyek
-Mengakses laporan evaluasi
-Melihat penggunaan material
+Tanggung jawab:
+- mengelola proyek
+- mengupdate progres pekerjaan
+- mencatat penggunaan material
+- mengunggah dokumentasi pekerjaan
 
-2. Supervisor Lapangan
+Kebutuhan utama:
+- input progres proyek
+- upload foto pekerjaan
+- mencatat penggunaan material
+- menyimpan bon pembelian
 
-Hak akses:
+5. Core System Features
+5.1 Authentication
 
-Membuat proyek baru
-Mengupdate progres proyek
-Upload foto progres
-Menginput penggunaan material
-Upload bon pembelian
-4. Fitur Utama Sistem
-4.1 Manajemen Proyek
+Fitur login untuk mengamankan akses sistem.
 
-Fitur untuk mengelola proyek konstruksi.
+Fungsi:
+- login pengguna
+- logout pengguna
+- manajemen role pengguna
 
-Data yang disimpan
-ID proyek
-Nama proyek
-Klien
-Lokasi proyek
-Koordinat lokasi (Google Maps)
-Tanggal mulai
-Estimasi selesai
-Status proyek
-Supervisor penanggung jawab
-Deskripsi proyek
-Status proyek
-Planning
-On Progress
-Completed
-Cancelled
-4.2 Monitoring Progres Proyek
+Role pengguna:
+- owner
+- supervisor
 
-Supervisor dapat mengupdate progres proyek secara berkala.
+Teknologi:
+- Supabase Authentication
 
-Data progres
-ID progres
-ID proyek
-Tanggal update
-Persentase progres
-Catatan pekerjaan
-Foto dokumentasi
-Fungsi
-Upload foto pekerjaan
-Melihat timeline progres
-Riwayat update proyek
-4.3 Dokumentasi Foto Proyek
+5.2 Project Management
 
-Foto menjadi bukti pekerjaan lapangan.
+Fitur untuk membuat dan mengelola proyek.
 
-Fitur
-Upload foto dari HP
-Galeri foto per proyek
-Foto per tanggal progres
-Preview gambar
-Penyimpanan
-Supabase Storage
-4.4 Inventaris Material Proyek
+Data proyek yang disimpan:
+- project_id
+- user_id
+- project_name
+- client_name
+- client_phone
+- description
+- status
+- start_date
+- estimated_finish
+- project_location
+- raw_address
+- latitude
+- longitude
+- geocode_latitude
+- geocode_longitude
+- start_date
+- estimated_finish
+- project_status
+- supervisor_id
+- description
 
-Untuk mencatat material yang digunakan pada proyek.
+Status proyek:
+- pending
+- on_progress
+- completed
+- cancelled
 
-Data material
-ID material
-Nama material
-Satuan
-Stok awal
-Stok tersisa
-Data penggunaan material
-ID penggunaan
-ID proyek
-ID material
-Jumlah digunakan
-Tanggal penggunaan
-Catatan
-4.5 Arsip Bon Digital
+5.3 Progress Monitoring
 
-Penyimpanan digital bon pembelian material.
+Supervisor dapat memperbarui progres proyek secara berkala.
 
-Data bon
-ID bon
-ID proyek
-Nama toko
-Tanggal pembelian
-Total biaya
-Foto bon
-Fungsi
-Upload foto bon
-Arsip per proyek
-Melihat riwayat pembelian
-4.6 Evaluasi Operasional Proyek
+Data progres:
+- progress_id
+- project_id
+- user_id
+- update_date
+- percentage
+- notes
+- photo_url
 
-Digunakan untuk evaluasi setelah proyek selesai.
+Fungsi:
+- menambahkan update progres
+- melihat timeline progres
+- melihat riwayat pekerjaan
 
-Data evaluasi
-ID evaluasi
-ID proyek
-Kendala yang terjadi
-Solusi yang dilakukan
-Catatan tambahan
-Penilaian proyek
-Tujuan
-Dokumentasi pengalaman proyek
-Referensi untuk proyek berikutnya
-5. Dashboard Sistem
+5.4 Photo Documentation
+Fitur untuk menyimpan dokumentasi foto pekerjaan.
 
-Dashboard digunakan oleh owner untuk melihat ringkasan proyek.
+Fungsi:
+- upload foto proyek
+- galeri foto proyek
+- preview foto
 
-Informasi dashboard
-Total proyek
-Proyek aktif
-Proyek selesai
-Progres proyek terbaru
-Penggunaan material terbaru
-Aktivitas terbaru supervisor
-Visualisasi
-Progress bar proyek
-Timeline aktivitas
-Statistik proyek
-6. Fitur Lokasi Proyek
+Media penyimpanan:
+- Supabase Storage
 
-Supervisor dapat menandai lokasi proyek langsung dari lapangan.
+6. Material Management System
 
-Metode input lokasi
-Klik tombol Pilih Lokasi
-Sistem membuka Google Maps / Map picker
-Supervisor menaruh pin lokasi
-Sistem menyimpan koordinat
-Data yang disimpan
-latitude
-longitude
-alamat lokasi
+Modul ini digunakan untuk mengelola stok material yang digunakan dalam proyek.
 
-7. Teknologi yang Digunakan
-Frontend
-Next.js
-React
-TailwindCSS
-TypeScript
-Backend
+Modul material terdiri dari beberapa bagian utama:
+- suppliers
+- materials
+- material_transactions
+- material_usage
+- low_stock_alert
 
-Menggunakan Next.js Fullstack
+6.1 Supplier Management
 
-Fungsi backend:
+Fitur untuk mencatat supplier material.
 
-API route
-Validasi data
-Upload file
-Database
-PostgreSQL
-Hosted di Supabase
-Storage
-Supabase Storage
+Data supplier:
+- supplier_id
+- supplier_name
+- address
+- phone
+- created_at
 
-Digunakan untuk:
+Satu supplier dapat menyediakan banyak material.
 
-Foto progres proyek
-Foto bon pembelian
-Authentication
-Supabase Auth
+6.2 Material Master Data
 
-Role user:
+Digunakan untuk mencatat material yang tersedia di bengkel.
 
-Owner
-Supervisor
-8. Struktur Data Utama (High Level)
+Data material:
+- material_id
+- supplier_id
+- material_name
+- category
+- unit
+- current_stock
+- minimum_stock
+- supplier_id
+- created_at
+- updated_at
 
-Tabel utama sistem:
+Contoh material:
+- Besi Hollow 40x40
+- Besi WF
+- Plat Baja
+- Elektroda Las
+- Cat Besi
 
-users
-projects
-project_progress
-materials
-material_usage
-receipts
-project_evaluations
+<!-- 6.3 Material Transactions
 
-Relasi utama:
+Setiap perubahan stok material harus dicatat sebagai transaksi.
 
-users
-   |
-projects
-   |
-   |---- project_progress
-   |---- material_usage
-   |---- receipts
-   |---- project_evaluations
-9. Kebutuhan Non-Fungsional
-Responsif
+Data transaksi:
+
+- transaction_id
+- material_id
+- transaction_type
+- quantity
+- project_id
+- supplier_id
+- transaction_date
+- notes -->
+
+<!-- Jenis transaksi:
+- IN       (material masuk / pembelian)
+- OUT      (material digunakan proyek)
+- ADJUST   (koreksi stok)
+
+Perhitungan stok:
+- current_stock = total(IN) - total(OUT) -->
+
+6.4 Material Usage for Projects
+
+Supervisor mencatat material yang digunakan dalam proyek.
+
+Data penggunaan material:
+
+- usage_id
+- project_id
+- material_id
+- quantity
+- usage_date
+- notes
+
+Data ini juga tercatat sebagai transaksi OUT pada sistem material.
+
+6.5 Low Stock Notification
+
+Sistem memberikan peringatan jika stok material hampir habis.
+
+Logika sistem:
+- if current_stock <= minimum_stock
+→ trigger warning
+
+Notifikasi ditampilkan pada:
+
+dashboard
+indikator peringatan material
+
+<!-- 7. Digital Receipt Archive
+
+Fitur untuk menyimpan bon pembelian material.
+
+Data bon:
+
+- receipt_id
+- project_id
+- supplier_id
+- purchase_date
+- total_cost
+- receipt_photo
+- notes
+
+Fungsi:
+- upload foto bon
+- arsip bon per proyek
+- riwayat pembelian material
+
+8. Project Evaluation
+
+Evaluasi dilakukan setelah proyek selesai.
+
+Data evaluasi:
+
+- evaluation_id
+- project_id
+- issues
+- solutions
+- notes
+- rating
+- created_at
+- created_by
+
+Tujuan:
+- mendokumentasikan kendala proyek
+- memberikan referensi untuk proyek berikutnya -->
+
+9. Dashboard
+
+Dashboard memberikan ringkasan sistem kepada pemilik bengkel.
+
+Informasi yang ditampilkan:
+
+- total_projects
+- active_projects
+- completed_projects
+- recent_progress_updates
+- low_stock_materials
+- recent_activities
+
+Komponen visual:
+- progress bar proyek
+- timeline aktivitas
+- statistik proyek
+
+10. High Level Data Entities
+
+Entitas utama dalam sistem:
+- users
+- projects
+- project_progress
+- materials
+- suppliers
+<!-- - material_transactions -->
+<!-- - receipts -->
+<!-- - project_evaluations -->
+- activity_logs
+
+11. Technology Stack
+
+Frontend:
+- Next.js
+- React
+- TypeScript
+- TailwindCSS
+
+Backend:
+- Next.js API Routes
+
+Database:
+- PostgreSQL (Supabase)
+
+Storage:
+- Supabase Storage
+
+Authentication:
+- Supabase Auth
+
+## 11.1 Supporting Libraries & Services
+
+Sistem memanfaatkan beberapa package, library, dan layanan pendukung untuk membantu proses pengembangan serta meningkatkan efisiensi operasional aplikasi.
+
+### Frontend Utility
+
+Digunakan untuk membantu pengelolaan tampilan dan interaksi pengguna.
+
+Kemungkinan library:
+- react-hook-form  
+  Digunakan untuk pengelolaan form dan validasi input pengguna.
+
+- zod  
+  Digunakan untuk validasi schema data pada form input.
+
+- clsx / tailwind-merge  
+  Membantu pengelolaan class TailwindCSS secara dinamis.
+
+- lucide-react  
+  Menyediakan ikon antarmuka yang ringan dan konsisten.
+
+---
+
+### Data Fetching & State Management
+
+Digunakan untuk sinkronisasi data antara frontend dan backend.
+
+Kemungkinan library:
+- TanStack Query (React Query)  
+  Digunakan untuk caching data, sinkronisasi data server, dan optimasi request API.
+
+- Axios / Fetch API  
+  Digunakan untuk komunikasi data dengan backend dan layanan Supabase.
+
+---
+
+### Image & File Handling
+
+Digunakan untuk mendukung dokumentasi proyek dan arsip digital.
+
+Kemungkinan library:
+- browser-image-compression  
+  Digunakan untuk melakukan kompresi gambar sebelum proses upload guna mengurangi ukuran file dan mempercepat pengiriman data.
+
+- react-dropzone  
+  Membantu proses upload file melalui drag-and-drop maupun input file biasa.
+
+---
+
+### Maps & Location Services
+
+Digunakan untuk mendukung validasi lokasi proyek.
+
+Kemungkinan layanan/library:
+- Google Maps API
+- Leaflet
+- Mapbox
+
+Fungsi:
+- pengambilan koordinat GPS
+- geocoding alamat
+- validasi lokasi proyek melalui peta digital
+
+---
+
+### Progressive Web App (PWA)
+
+Digunakan untuk mendukung penggunaan sistem pada perangkat mobile.
+
+Kemungkinan library:
+- next-pwa
+
+Fungsi:
+- instalasi aplikasi pada perangkat mobile
+- caching halaman tertentu
+- dukungan penggunaan dasar secara offline
+
+---
+
+### UI Components
+
+Digunakan untuk mempercepat pengembangan antarmuka sistem.
+
+Kemungkinan library:
+- shadcn/ui
+- Radix UI
+
+Fungsi:
+- komponen dialog
+- tabel data
+- dropdown
+- toast notification
+- modal interaktif
+
+---
+
+### Additional Utilities
+
+Digunakan sebagai utilitas pendukung sistem.
+
+Kemungkinan library:
+- date-fns  
+  Pengolahan format tanggal dan waktu.
+
+- uuid  
+  Pembuatan identifier unik.
+
+- dotenv  
+  Pengelolaan environment variable aplikasi.
+
+12. Non Functional Requirements
+Responsiveness
 
 Sistem harus dapat digunakan pada:
+- desktop
+- tablet
+- mobile
 
-Desktop
-Tablet
-Smartphone
-Keamanan
-Authentication login
-Role based access
-Validasi input
-Kinerja
-Upload foto maksimal 5MB
-Sistem tetap responsif saat membuka galeri foto
-Backup
+Security:
+- authentication login
+- role based access control
+- input validation
 
-Database harus memiliki sistem backup dari Supabase.
+Performance:
+- upload foto maksimal 5MB
+- galeri foto tetap responsif
 
-10. Batasan Sistem
-Sistem hanya digunakan oleh internal bengkel
-Tidak mencakup sistem akuntansi penuh
-Tidak mencakup sistem payroll pekerja
+Data Backup:
+- Database menggunakan backup otomatis dari Supabase.
 
-11. Roadmap Pengembangan
-Tahap 1 (MVP)
-Authentication
-Manajemen proyek
-Monitoring progres
-Upload foto proyek
-Tahap 2
-Inventaris material
-Arsip bon digital
-Tahap 3
-Dashboard analitik
-Evaluasi proyek
-Fitur lokasi proyek
-12. Saran Fitur Tambahan (Yang Sebenarnya Penting)
+## 13. Development Roadmap
 
-Ini bagian yang sering tidak terpikirkan mahasiswa, padahal sangat berguna.
+Pengembangan sistem dilakukan secara bertahap untuk memastikan setiap fitur yang dibangun memiliki tujuan yang jelas serta dapat diuji secara bertahap sesuai dengan kebutuhan proyek.
 
-1. Activity Log
+---
 
-Semua aktivitas dicatat.
+### Phase 1 — Minimum Viable Product (MVP)
 
-Contoh:
+Fase ini berfokus pada pembangunan fitur inti sistem agar aplikasi sudah dapat digunakan untuk mengelola proyek secara dasar.
 
-Supervisor A mengupdate progres proyek
-Supervisor B menambahkan material
-Owner mengubah status proyek
+Fitur utama:
+- Authentication (login pengguna)
+- Project management (tambah, ubah, dan lihat proyek)
+- Assign anggota proyek
+- Progress monitoring (persentase, catatan)
+- Photo documentation (upload dokumentasi progres)
+- Dashboard sederhana
 
-Ini penting kalau data berubah dan semua orang mulai saling menyalahkan.
+Output:
+- Sistem sudah memiliki alur utama
+- Data proyek dapat dikelola dan dipantau
 
-2. Notifikasi
+---
 
-Contoh:
+### Phase 2 — Operasional Proyek
 
-Proyek mendekati deadline
-Update progres baru
-Material hampir habis
-3. Export Laporan
+Fase ini menambahkan fitur pendukung untuk membantu pengelolaan sumber daya proyek.
 
-Owner bisa export:
+Fitur:
+- Material management (data material)
+- Supplier management
+- Material usage tracking (penggunaan material per proyek)
+- Digital receipt archive (opsional, arsip bon)
 
-Laporan proyek
-Laporan penggunaan material
-Dokumentasi proyek
+Output:
+- Sistem mampu mencatat penggunaan material
+- Data operasional proyek lebih terstruktur
 
-Format:
+### Phase 3 — Pengembangan Lanjutan
 
-PDF
-Excel
-4. Progressive Photo Timeline
+Fase ini merupakan pengembangan tambahan untuk meningkatkan nilai guna sistem.
 
-Foto bisa dilihat seperti timeline:
+Fitur:
+- Offline support (Progressive Web App / PWA)
 
-Day 1   : Persiapan rangka
-Day 7   : Pemasangan struktur
-Day 15  : Finishing
+- Mendukung kebutuhan penggunaan lanjutan
 
-Ini membuat sistem terlihat jauh lebih profesional.
+14. System Scope
+Sistem ini dirancang untuk:
+- manajemen proyek bengkel las
+- dokumentasi pekerjaan
+- pengelolaan material proyek
 
-5. Offline Upload (opsional tapi keren)
-
-Supervisor sering di lokasi tanpa sinyal.
-
-Solusi:
-
-Simpan foto sementara
-Upload ketika internet tersedia
-
-Bisa dicapai dengan PWA + local storage.
-
-13. Saran Teknologi Tambahan (Supaya Proyeknya Terlihat Lebih “Serius”)
-
-Tambahkan ini jika ingin terlihat lebih matang:
-
-Map
-
-Gunakan:
-
-Leaflet.js
-OpenStreetMap
-
-Alasannya:
-
-Gratis
-Tidak perlu billing Google Maps
-Image Optimization
-
-Gunakan:
-
-Next.js Image
-atau Sharp
-
-Agar foto proyek tidak terlalu berat.
-
-Validation
-
-Gunakan:
-
-Zod
-
-Untuk validasi form.
-
-Kesimpulan
-
-Sistem ini memiliki core modules:
-
-Project Management
-Progress Monitoring
-Photo Documentation
-Material Tracking
-Receipt Archive
-Project Evaluation
-Dashboard Monitoring
-
-Dengan teknologi:
-
-Next.js
-Supabase
-PostgreSQL
-Supabase Storage
-TailwindCSS
-
-Arsitektur ini cukup realistis untuk TA D3, tidak terlalu sederhana tetapi juga tidak berlebihan.
+Sistem tidak mencakup:
+- sistem akuntansi penuh
+- sistem payroll pekerja
+- sistem manajemen pelanggan
