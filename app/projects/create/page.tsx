@@ -62,6 +62,24 @@ export default function CreateProjectPage() {
   const [endDate, setEndDate] = useState('');
   const [projectAddress, setProjectAddress] = useState('');
   
+  // Supervisor
+  const [supervisors, setSupervisors] = useState<{user_id: number, fullname: string}[]>([]);
+  const [selectedSupervisorId, setSelectedSupervisorId] = useState('');
+
+  // Fetch supervisors
+  useEffect(() => {
+    const fetchSupervisors = async () => {
+      const { data } = await supabase
+        .from('users')
+        .select('user_id, fullname')
+        .eq('system_role', 'supervisor')
+        .eq('is_active', true)
+        .order('fullname');
+      if (data) setSupervisors(data);
+    };
+    fetchSupervisors();
+  }, [supabase]);
+
   // Posisi Peta (Manual Pick atau dari GPS)
   const [position, setPosition] = useState<{lat: number, lng: number} | null>(null);
 
@@ -119,6 +137,7 @@ export default function CreateProjectPage() {
         start_date: startDate || undefined,
         estimated_finish: endDate || undefined,
         status: 'menunggu_validasi' as ProjectStatus,
+        supervisor_id: selectedSupervisorId ? parseInt(selectedSupervisorId) : null,
       };
 
       const { error } = await supabase.from('projects').insert([payload]);
@@ -219,6 +238,25 @@ export default function CreateProjectPage() {
               onChange={(e) => setDescription(e.target.value)}
             />
           </div>
+
+          {/* Supervisor */}
+          <div>
+            <label className="block mb-2 font-medium text-sm text-brand-subtext">
+              Supervisor Proyek (Opsional)
+            </label>
+            <select
+              className="w-full p-2.5 border border-brand-border rounded-lg bg-brand-bg focus:ring-1 focus:ring-brand-primary focus:border-brand-primary focus:outline-none text-brand-text transition-colors"
+              value={selectedSupervisorId}
+              onChange={(e) => setSelectedSupervisorId(e.target.value)}
+            >
+              <option value="">-- Kosongkan / Pilih Nanti --</option>
+              {supervisors.map(s => (
+                <option key={s.user_id} value={s.user_id}>{s.fullname}</option>
+              ))}
+            </select>
+            <p className="text-xs text-brand-muted mt-1">Jika diisi, proyek akan langsung masuk ke dashboard supervisor tersebut.</p>
+          </div>
+
 
           {/* ── Jadwal ── */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-brand-bg/50 p-4 rounded-xl border border-brand-border">

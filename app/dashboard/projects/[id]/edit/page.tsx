@@ -45,6 +45,7 @@ export default function EditProjectPage({ params }: Props) {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [status, setStatus] = useState<ProjectStatus>("menunggu_validasi");
+  const [supervisorId, setSupervisorId] = useState("");
   const [position, setPosition] = useState<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => { params.then(({ id }) => setProjectId(Number(id))); }, [params]);
@@ -64,6 +65,7 @@ export default function EditProjectPage({ params }: Props) {
         setStartDate(proj.start_date ?? "");
         setEndDate(proj.estimated_finish ?? "");
         setStatus(proj.status);
+        if (proj.supervisor_id) setSupervisorId(proj.supervisor_id.toString());
         if (proj.latitude && proj.longitude) {
           setPosition({ lat: proj.latitude, lng: proj.longitude });
         }
@@ -102,6 +104,7 @@ export default function EditProjectPage({ params }: Props) {
           start_date: startDate || null,
           estimated_finish: endDate || null,
           status,
+          supervisor_id: supervisorId ? parseInt(supervisorId) : null,
         })
         .eq("project_id", projectId);
 
@@ -167,19 +170,35 @@ export default function EditProjectPage({ params }: Props) {
         </div>
 
         {/* Status */}
-        <div>
-          <label className="block mb-1.5 text-xs font-bold uppercase tracking-wide" style={{ color: C.muted }}>Status Proyek</label>
-          <div className="flex flex-wrap gap-2">
-            {STATUS_OPTIONS.map(({ label, value }) => (
-              <button key={value} type="button" onClick={() => setStatus(value)}
-                className={`px-4 py-2 rounded-lg text-xs font-bold border transition-all ${
-                  status === value ? "bg-orange-500 border-orange-500 text-white" : "hover:bg-slate-50"
-                }`}
-                style={status !== value ? { borderColor: C.border, color: C.subtext } : undefined}
-              >
-                {label}
-              </button>
-            ))}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block mb-1.5 text-xs font-bold uppercase tracking-wide" style={{ color: C.muted }}>Status Proyek</label>
+            <div className="flex flex-wrap gap-2">
+              {STATUS_OPTIONS.map(({ label, value }) => (
+                <button key={value} type="button" onClick={() => setStatus(value)}
+                  className={`px-4 py-2 rounded-lg text-xs font-bold border transition-all ${
+                    status === value ? "bg-orange-500 border-orange-500 text-white" : "hover:bg-slate-50"
+                  }`}
+                  style={status !== value ? { borderColor: C.border, color: C.subtext } : undefined}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          
+          <div>
+            <label className="block mb-1.5 text-xs font-bold uppercase tracking-wide" style={{ color: C.muted }}>Supervisor Proyek</label>
+            <select 
+              value={supervisorId} onChange={(e) => setSupervisorId(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-lg border text-sm font-medium outline-none focus:border-orange-500 transition-colors"
+              style={{ borderColor: C.border }}
+            >
+              <option value="">-- Belum Ditugaskan --</option>
+              {supervisors.map(s => (
+                <option key={s.user_id} value={s.user_id}>{s.fullname}</option>
+              ))}
+            </select>
           </div>
         </div>
 

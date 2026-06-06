@@ -150,6 +150,7 @@ export interface CreateProjectInput {
   start_date?: string;
   estimated_finish?: string;
   status?: ProjectStatus;
+  supervisor_id?: number | null;
 }
 
 export interface CreateProjectMemberInput {
