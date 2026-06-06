@@ -28,8 +28,10 @@ export const OWNER_NAV: NavItem[] = [
 
 export const SUPERVISOR_NAV: NavItem[] = [
   { label: "Dashboard", Icon: LayoutGrid, href: "/dashboard/supervisor" },
+  { label: "Proyek", Icon: FolderOpen, href: "/dashboard/supervisor/projects", matchPatterns: ["/dashboard/supervisor/projects"] },
   { label: "Update Progres", Icon: TrendingUp, href: "/dashboard/supervisor/progress", matchPatterns: ["/dashboard/supervisor/progress"] },
   { label: "Material Keluar", Icon: ClipboardList, href: "/dashboard/supervisor/materials", matchPatterns: ["/dashboard/supervisor/materials"] },
+  { label: "Validasi Lokasi", Icon: MapPin, href: "/dashboard/supervisor/location", matchPatterns: ["/dashboard/supervisor/location"] },
 ];
 
 export function isNavActive(pathname: string, href: string, matchPatterns?: string[]) {

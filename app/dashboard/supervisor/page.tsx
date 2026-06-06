@@ -10,7 +10,6 @@ import {
   CheckCheck, CalendarClock, AlertCircle, Clock,
   CheckCircle2, FileText,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 import type { Project, User, ProjectProgress, ProjectMember } from "@/lib/types/database";
 
 // ── Design tokens ─────────────────────────────────────────────
@@ -45,13 +44,6 @@ function formatDate(d: string | null | undefined) {
   if (!d) return "—";
   return new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
 }
-function getLatestProgress(projectId: number, progressList: ProjectProgress[]): number {
-  const records = progressList.filter(p => p.project_id === projectId);
-  if (records.length === 0) return 0;
-  return records.sort((a, b) =>
-    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  )[0].percentage;
-}
 
 // GPS State
 type GpsState =
@@ -64,56 +56,44 @@ type GpsState =
 export default function SupervisorDashboard() {
   const router = useRouter();
   const pathname = usePathname();
-  const supabase = createClient();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Data state
   const [user, setUser] = useState<User | null>(null);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [progressList, setProgressList] = useState<ProjectProgress[]>([]);
+  const [projects, setProjects] = useState<(Project & { latest_progress?: number })[]>([]);
   const [recentProgress, setRecentProgress] = useState<ProjectProgress[]>([]);
-  const [members, setMembers] = useState<ProjectMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // GPS state
   const [gps, setGps] = useState<GpsState>({ status: "idle" });
 
+  // Proyek yang dipilih untuk validasi lokasi
+  const [selectedValidationProject, setSelectedValidationProject] = useState<number | "">("");
+
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
       // Ambil user yang login
-      const res = await fetch('/api/auth/me');
-      const { user } = await res.json();
+      const resUser = await fetch('/api/auth/me');
+      const { user } = await resUser.json();
       if (!user) return;
       setUser(user as User);
 
-      // Ambil semua proyek (supervisor bisa menangani banyak proyek aktif)
-      const { data: projectData } = await supabase
-        .from("projects")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (projectData) setProjects(projectData as Project[]);
+      // Ambil proyek yang ditugaskan via API (sudah termasuk latest_progress)
+      const resProjects = await fetch('/api/supervisor/projects');
+      const { projects: projectData } = await resProjects.json();
+      if (projectData) setProjects(projectData);
 
-      // Ambil semua progress
-      const { data: progressData } = await supabase
-        .from("project_progress")
-        .select("*")
-        .order("created_at", { ascending: false });
+      // Ambil progress terbaru via API
+      const resProgress = await fetch('/api/supervisor/progress');
+      const { progress: progressData } = await resProgress.json();
       if (progressData) {
-        setProgressList(progressData as ProjectProgress[]);
-        setRecentProgress((progressData as ProjectProgress[]).slice(0, 5));
+        setRecentProgress(progressData.slice(0, 5));
       }
-
-      // Ambil semua project members untuk context
-      const { data: memberData } = await supabase
-        .from("project_members")
-        .select("*");
-      if (memberData) setMembers(memberData as ProjectMember[]);
-
     } finally {
       setIsLoading(false);
     }
-  }, [supabase]);
+  }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -140,6 +120,62 @@ export default function SupervisorDashboard() {
     );
   };
 
+  // Simpan validasi lokasi via API
+  const handleSimpanValidasi = async () => {
+    if (gps.status !== "success" || !selectedValidationProject) return;
+
+    try {
+      const res = await fetch(`/api/supervisor/projects/${selectedValidationProject}/validate-location`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          latitude: gps.lat,
+          longitude: gps.lng,
+        }),
+      });
+
+      const result = await res.json();
+      if (!res.ok) {
+        alert(result.error || "Gagal menyimpan validasi lokasi.");
+        return;
+      }
+
+      alert("Lokasi proyek berhasil divalidasi! Status proyek kini: Aktif.");
+      setGps({ status: "idle" });
+      setSelectedValidationProject("");
+      await fetchData();
+    } catch {
+      alert("Terjadi kesalahan saat menyimpan lokasi.");
+    }
+  };
+
+  // Update lokasi GPS untuk proyek yang sudah aktif
+  const handleUpdateLokasi = async (projectId: number) => {
+    if (gps.status !== "success") return;
+
+    try {
+      const res = await fetch(`/api/supervisor/projects/${projectId}/update-location`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          latitude: gps.lat,
+          longitude: gps.lng,
+        }),
+      });
+
+      const result = await res.json();
+      if (!res.ok) {
+        alert(result.error || "Gagal memperbarui lokasi.");
+        return;
+      }
+
+      alert("Lokasi proyek berhasil diperbarui.");
+      await fetchData();
+    } catch {
+      alert("Terjadi kesalahan saat memperbarui lokasi.");
+    }
+  };
+
   const handleLogout = async () => {
     const { logoutAction } = await import('@/app/login/actions');
     await logoutAction();
@@ -152,6 +188,7 @@ export default function SupervisorDashboard() {
     : "SV";
 
   const activeProjects = projects.filter(p => p.status === "aktif");
+  const pendingProjects = projects.filter(p => p.status === "menunggu_validasi");
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: C.bg, color: C.text }}>
@@ -273,9 +310,12 @@ export default function SupervisorDashboard() {
             ) : (
               <div className="space-y-3">
                 {activeProjects.slice(0, 3).map((project) => {
-                  const pct = getLatestProgress(project.project_id, progressList);
+                  const pct = project.latest_progress ?? 0;
                   return (
-                    <div key={project.project_id} className="rounded-xl border hover:border-orange-500/40 transition-colors" style={{ background: C.card, borderColor: C.border }}>
+                    <div key={project.project_id}
+                      onClick={() => router.push(`/dashboard/supervisor/projects/${project.project_id}`)}
+                      className="rounded-xl border hover:border-orange-500/40 transition-colors cursor-pointer"
+                      style={{ background: C.card, borderColor: C.border }}>
                       <div className="h-1 rounded-t-xl bg-gradient-to-r from-orange-500 via-amber-400 to-orange-600" />
                       <div className="p-4">
                         <div className="flex items-start justify-between gap-3 mb-3">
@@ -364,7 +404,7 @@ export default function SupervisorDashboard() {
                           {proj?.project_name ?? `Proyek #${prog.project_id}`}
                         </p>
                         {prog.notes && (
-                          <p className="text-[11px] mt-0.5 italic truncate" style={{ color: C.muted }}>"{prog.notes}"</p>
+                          <p className="text-[11px] mt-0.5 italic truncate" style={{ color: C.muted }}>&quot;{prog.notes}&quot;</p>
                         )}
                       </div>
                       <span className="text-[10px] font-medium shrink-0 mt-0.5 whitespace-nowrap" style={{ color: C.muted }}>
@@ -401,6 +441,26 @@ export default function SupervisorDashboard() {
                 )}
               </div>
 
+              {/* Pilih proyek untuk validasi */}
+              {pendingProjects.length > 0 && (
+                <div className="mb-3">
+                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: C.subtext }}>
+                    Pilih proyek untuk divalidasi
+                  </label>
+                  <select
+                    value={selectedValidationProject}
+                    onChange={(e) => setSelectedValidationProject(e.target.value === "" ? "" : Number(e.target.value))}
+                    className="w-full px-3 py-2 rounded-lg border text-sm font-medium outline-none focus:border-orange-500"
+                    style={{ borderColor: C.border, background: C.bg, color: C.text }}
+                  >
+                    <option value="">-- Pilih Proyek Menunggu Validasi --</option>
+                    {pendingProjects.map(p => (
+                      <option key={p.project_id} value={p.project_id}>{p.project_name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               {gps.status === "success" && (
                 <div className="space-y-1 mb-3">
                   <p className="text-[11px] font-medium" style={{ color: C.muted }}>
@@ -427,26 +487,38 @@ export default function SupervisorDashboard() {
                 </p>
               )}
 
-              <button
-                onClick={handleAmbilGps}
-                disabled={gps.status === "loading"}
-                className={`w-full py-2.5 rounded-lg text-sm font-bold transition-all duration-200 active:scale-95 flex items-center justify-center gap-2 disabled:opacity-60 ${
-                  gps.status === "success"
-                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
-                    : "bg-emerald-500 text-white hover:bg-emerald-600 shadow-[0_4px_14px_rgba(22,163,74,0.25)]"
-                }`}
-              >
-                {gps.status === "loading" ? (
-                  <>
-                    <svg className="animate-spin" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>
-                    Mengambil GPS...
-                  </>
-                ) : gps.status === "success" ? (
-                  <><CheckCheck size={15} /> Perbarui Lokasi GPS</>
-                ) : (
-                  <><Navigation size={15} /> Ambil Lokasi GPS</>
+              <div className="space-y-2">
+                <button
+                  onClick={handleAmbilGps}
+                  disabled={gps.status === "loading"}
+                  className={`w-full py-2.5 rounded-lg text-sm font-bold transition-all duration-200 active:scale-95 flex items-center justify-center gap-2 disabled:opacity-60 ${
+                    gps.status === "success"
+                      ? "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
+                      : "bg-emerald-500 text-white hover:bg-emerald-600 shadow-[0_4px_14px_rgba(22,163,74,0.25)]"
+                  }`}
+                >
+                  {gps.status === "loading" ? (
+                    <>
+                      <svg className="animate-spin" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>
+                      Mengambil GPS...
+                    </>
+                  ) : gps.status === "success" ? (
+                    <><CheckCheck size={15} /> Perbarui Lokasi GPS</>
+                  ) : (
+                    <><Navigation size={15} /> Ambil Lokasi GPS</>
+                  )}
+                </button>
+
+                {/* Tombol simpan validasi */}
+                {gps.status === "success" && selectedValidationProject && (
+                  <button
+                    onClick={handleSimpanValidasi}
+                    className="w-full py-2.5 rounded-lg text-sm font-bold bg-orange-500 text-white hover:bg-orange-600 shadow-[0_4px_14px_rgba(249,115,22,0.3)] transition-all duration-200 active:scale-95 flex items-center justify-center gap-2"
+                  >
+                    <CheckCircle2 size={15} /> Validasi & Mulai Proyek
+                  </button>
                 )}
-              </button>
+              </div>
             </div>
           </section>
 

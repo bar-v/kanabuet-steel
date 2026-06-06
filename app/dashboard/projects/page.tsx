@@ -21,25 +21,25 @@ const C = {
 // ── Helpers ───────────────────────────────────────────────────
 function getStatusStyle(s: string) {
   switch (s) {
-    case "aktif":             return "bg-orange-50 text-orange-700 border-orange-200";
-    case "selesai":           return "bg-emerald-50 text-emerald-700 border-emerald-200";
-    case "tertunda":          return "bg-amber-50 text-amber-700 border-amber-200";
+    case "aktif": return "bg-orange-50 text-orange-700 border-orange-200";
+    case "selesai": return "bg-emerald-50 text-emerald-700 border-emerald-200";
+    case "tertunda": return "bg-amber-50 text-amber-700 border-amber-200";
     case "menunggu_validasi": return "bg-sky-50 text-sky-700 border-sky-200";
-    default:                  return "bg-slate-50 text-slate-700 border-slate-200";
+    default: return "bg-slate-50 text-slate-700 border-slate-200";
   }
 }
 function getStatusLabel(s: string) {
   switch (s) {
-    case "aktif":             return "Aktif";
-    case "selesai":           return "Selesai";
-    case "tertunda":          return "Tertunda";
+    case "aktif": return "Aktif";
+    case "selesai": return "Selesai";
+    case "tertunda": return "Tertunda";
     case "menunggu_validasi": return "Menunggu Validasi";
-    default:                  return s;
+    default: return s;
   }
 }
 function getProgressColor(pct: number) {
   if (pct >= 100) return "bg-emerald-500";
-  if (pct >= 50)  return "bg-orange-500";
+  if (pct >= 50) return "bg-orange-500";
   return "bg-amber-500";
 }
 function formatDate(d: string | null | undefined) {
@@ -55,11 +55,11 @@ function getLatestProgress(projectId: number, progressList: ProjectProgress[]): 
 }
 
 const STATUS_FILTERS: { label: string; value: ProjectStatus | "semua" }[] = [
-  { label: "Semua",              value: "semua"             },
-  { label: "Aktif",              value: "aktif"             },
-  { label: "Menunggu Validasi",  value: "menunggu_validasi" },
-  { label: "Tertunda",           value: "tertunda"          },
-  { label: "Selesai",            value: "selesai"           },
+  { label: "Semua", value: "semua" },
+  { label: "Aktif", value: "aktif" },
+  { label: "Menunggu Validasi", value: "menunggu_validasi" },
+  { label: "Tertunda", value: "tertunda" },
+  { label: "Selesai", value: "selesai" },
 ];
 
 // ── Component ─────────────────────────────────────────────────
@@ -119,10 +119,10 @@ export default function ProjectManagementPage() {
 
   // Stats
   const stats = [
-    { label: "Total Proyek",    value: projects.length,                                              color: "text-slate-600",   iconBg: "bg-slate-50",   Icon: LayoutGrid },
-    { label: "Proyek Aktif",    value: projects.filter(p => p.status === "aktif").length,            color: "text-orange-600",  iconBg: "bg-orange-50",  Icon: TrendingUp },
-    { label: "Proyek Selesai",  value: projects.filter(p => p.status === "selesai").length,          color: "text-emerald-600", iconBg: "bg-emerald-50", Icon: FolderOpen },
-    { label: "Proyek Tertunda", value: projects.filter(p => p.status === "tertunda").length,         color: "text-amber-600",   iconBg: "bg-amber-50",   Icon: BarChart3  },
+    { label: "Total Proyek", value: projects.length, color: "text-slate-600", iconBg: "bg-slate-50", Icon: LayoutGrid },
+    { label: "Proyek Aktif", value: projects.filter(p => p.status === "aktif").length, color: "text-orange-600", iconBg: "bg-orange-50", Icon: TrendingUp },
+    { label: "Proyek Selesai", value: projects.filter(p => p.status === "selesai").length, color: "text-emerald-600", iconBg: "bg-emerald-50", Icon: FolderOpen },
+    { label: "Proyek Tertunda", value: projects.filter(p => p.status === "tertunda").length, color: "text-amber-600", iconBg: "bg-amber-50", Icon: BarChart3 },
   ];
 
   const headerActions = (
@@ -172,11 +172,10 @@ export default function ProjectManagementPage() {
             <button
               key={value}
               onClick={() => setStatusFilter(value)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border whitespace-nowrap transition-colors ${
-                statusFilter === value
-                  ? "bg-orange-500 border-orange-500 text-white"
-                  : "hover:bg-slate-50"
-              }`}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border whitespace-nowrap transition-colors ${statusFilter === value
+                ? "bg-orange-500 border-orange-500 text-white"
+                : "hover:bg-slate-50"
+                }`}
               style={statusFilter !== value ? { borderColor: C.border, color: C.subtext, background: C.card } : undefined}
             >
               {label}
@@ -223,8 +222,9 @@ export default function ProjectManagementPage() {
                     return (
                       <tr
                         key={p.project_id}
-                        className={`border-b hover:bg-slate-50/50 transition-colors group ${isDeleting ? "opacity-50" : ""}`}
+                        className={`border-b hover:bg-slate-50/50 transition-colors group cursor-pointer ${isDeleting ? "opacity-50" : ""}`}
                         style={{ borderColor: C.border }}
+                        onClick={() => router.push(`/dashboard/projects/${p.project_id}`)}
                       >
                         <td className="px-5 py-4">
                           <p className="text-sm font-bold" style={{ color: C.text }}>{p.project_name}</p>
@@ -258,29 +258,26 @@ export default function ProjectManagementPage() {
                           </span>
                         </td>
                         <td className="px-5 py-4 text-right">
-                          <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="flex items-center justify-end gap-1">
                             <button
-                              onClick={() => router.push(`/dashboard/projects/${p.project_id}`)}
-                              className="p-1.5 hover:bg-orange-50 text-orange-600 rounded-md" title="Detail"
-                            >
-                              <Eye size={14} />
-                            </button>
-                            <button
-                              onClick={() => router.push(`/dashboard/projects/${p.project_id}/edit`)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(`/dashboard/projects/${p.project_id}/edit`);
+                              }}
                               className="p-1.5 hover:bg-slate-100 text-slate-600 rounded-md" title="Edit"
                             >
                               <Edit2 size={14} />
                             </button>
                             <button
-                              onClick={() => handleDelete(p.project_id, p.project_name)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(p.project_id, p.project_name);
+                              }}
                               disabled={isDeleting}
                               className="p-1.5 hover:bg-red-50 text-red-600 rounded-md disabled:opacity-50" title="Hapus"
                             >
                               <Trash2 size={14} />
                             </button>
-                          </div>
-                          <div className="group-hover:hidden">
-                            <MoreVertical size={16} style={{ color: C.muted }} />
                           </div>
                         </td>
                       </tr>

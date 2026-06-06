@@ -6,7 +6,6 @@ import { useRouter, usePathname } from "next/navigation";
 import {
   Package, LayoutGrid, TrendingUp, LogOut, Menu, X, Plus, AlertCircle, CheckCircle2, ClipboardList
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 import { SUPERVISOR_NAV, isNavActive } from "@/lib/config/navigation";
 import type { Project, Material, User } from "@/lib/types/database";
 
@@ -27,7 +26,6 @@ function IconLoader() {
 export default function SupervisorMaterialUsagePage() {
   const router = useRouter();
   const pathname = usePathname();
-  const supabase = createClient();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
 
@@ -47,25 +45,23 @@ export default function SupervisorMaterialUsagePage() {
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('/api/auth/me');
-      const { user } = await res.json();
+      const resUser = await fetch('/api/auth/me');
+      const { user } = await resUser.json();
       if (user) {
         setUser(user as User);
       }
 
-      // Ambil proyek aktif
-      const { data: projData } = await supabase
-        .from("projects")
-        .select("*")
-        .eq("status", "aktif")
-        .order("created_at", { ascending: false });
-      if (projData) setProjects(projData as Project[]);
+      // Ambil proyek aktif yang ditugaskan via API
+      const resProjects = await fetch('/api/supervisor/projects');
+      const { projects: projData } = await resProjects.json();
+      if (projData) {
+        // Filter hanya proyek aktif
+        setProjects((projData as Project[]).filter(p => p.status === "aktif"));
+      }
 
-      // Ambil material
-      const { data: matData } = await supabase
-        .from("materials")
-        .select("*")
-        .order("material_name", { ascending: true });
+      // Ambil material via API
+      const resMaterials = await fetch('/api/supervisor/materials');
+      const { materials: matData } = await resMaterials.json();
       if (matData) setMaterials(matData as Material[]);
 
     } catch (error) {
@@ -73,7 +69,7 @@ export default function SupervisorMaterialUsagePage() {
     } finally {
       setIsLoading(false);
     }
-  }, [supabase]);
+  }, []);
 
   useEffect(() => {
     fetchData();
@@ -98,16 +94,20 @@ export default function SupervisorMaterialUsagePage() {
     setSuccessMsg(null);
 
     try {
-      const { error } = await supabase.from("material_usage").insert([{
-        project_id: parseInt(selectedProjectId),
-        material_id: parseInt(selectedMaterialId),
-        quantity: parseInt(quantity),
-        notes: notes || null
-      }]);
+      const res = await fetch('/api/supervisor/materials/usage', {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          project_id: parseInt(selectedProjectId),
+          material_id: parseInt(selectedMaterialId),
+          quantity: parseInt(quantity),
+          notes: notes || null,
+        }),
+      });
 
-      if (error) {
-        // Trigger SQL check_material_stock bisa throw error jika stok tidak cukup
-        throw error;
+      const result = await res.json();
+      if (!res.ok) {
+        throw new Error(result.error || "Gagal mencatat penggunaan material.");
       }
 
       setSuccessMsg("Penggunaan material berhasil dicatat.");
@@ -118,9 +118,9 @@ export default function SupervisorMaterialUsagePage() {
 
       // Refresh material stock di state
       await fetchData();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Submit error:", error);
-      setErrorMsg(error.message || "Gagal mencatat penggunaan material.");
+      setErrorMsg(error instanceof Error ? error.message : "Gagal mencatat penggunaan material.");
     } finally {
       setIsSubmitting(false);
     }

@@ -34,6 +34,7 @@ export interface Project {
   status: ProjectStatus;
   start_date: string | null;
   estimated_finish: string | null;
+  supervisor_id: number | null;
   created_at: string;
 }
 

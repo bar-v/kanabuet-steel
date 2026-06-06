@@ -8,7 +8,6 @@ import {
   LogOut, Menu, X, ArrowLeft, MapPin, CalendarClock,
   Camera, FileText, Bell, Save, ChevronDown,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 import type { Project, ProjectProgress, User } from "@/lib/types/database";
 
 const C = {
@@ -24,13 +23,6 @@ function progressColor(pct: number) {
   if (pct >= 50) return "bg-orange-400";
   return "bg-amber-500";
 }
-function getLatestProgress(projectId: number, list: ProjectProgress[]): number {
-  const records = list.filter(p => p.project_id === projectId);
-  if (!records.length) return 0;
-  return records.sort((a, b) =>
-    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  )[0].percentage;
-}
 function formatDate(d: string | null | undefined) {
   if (!d) return "—";
   return new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
@@ -39,18 +31,16 @@ function formatDate(d: string | null | undefined) {
 export default function UpdateProgressPage() {
   const router = useRouter();
   const pathname = usePathname();
-  const supabase = createClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // User & data
   const [user, setUser] = useState<User | null>(null);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [progressList, setProgressList] = useState<ProjectProgress[]>([]);
+  const [projects, setProjects] = useState<(Project & { latest_progress?: number })[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Form state
-  const [selectedProjectId, setSelectedProjectId] = useState<number | "">("");
+  const [selectedProjectId, setSelectedProjectId] = useState<number | "">(""); 
   const [pct, setPct] = useState(0);
   const [notes, setNotes] = useState("");
   const [updateDate, setUpdateDate] = useState(new Date().toISOString().split("T")[0]);
@@ -62,27 +52,30 @@ export default function UpdateProgressPage() {
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('/api/auth/me');
-      const { user } = await res.json();
+      const resUser = await fetch('/api/auth/me');
+      const { user } = await resUser.json();
       if (user) setUser(user as User);
-      const { data: projectData } = await supabase.from("projects").select("*").order("created_at", { ascending: false });
-      if (projectData) setProjects(projectData as Project[]);
-      const { data: progressData } = await supabase.from("project_progress").select("*").order("created_at", { ascending: false });
-      if (progressData) setProgressList(progressData as ProjectProgress[]);
+
+      // Ambil proyek yang ditugaskan via API
+      const resProjects = await fetch('/api/supervisor/projects');
+      const { projects: projectData } = await resProjects.json();
+      if (projectData) setProjects(projectData);
     } finally {
       setIsLoading(false);
     }
-  }, [supabase]);
+  }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
   // Sync pct ke latest progress ketika proyek dipilih
   useEffect(() => {
     if (selectedProjectId !== "") {
-      const latest = getLatestProgress(Number(selectedProjectId), progressList);
-      setPct(latest);
+      const project = projects.find(p => p.project_id === Number(selectedProjectId));
+      if (project) {
+        setPct(project.latest_progress ?? 0);
+      }
     }
-  }, [selectedProjectId, progressList]);
+  }, [selectedProjectId, projects]);
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -100,35 +93,42 @@ export default function UpdateProgressPage() {
     try {
       let photoUrl: string | null = null;
 
-      // Upload foto jika ada
-      if (photoFile && user) {
-        const ext = photoFile.name.split(".").pop();
-        const filePath = `progress/${selectedProjectId}/${Date.now()}.${ext}`;
-        const { error: uploadError } = await supabase.storage
-          .from("project-photos")
-          .upload(filePath, photoFile, { upsert: false });
+      // Upload foto via API jika ada
+      if (photoFile) {
+        const formData = new FormData();
+        formData.append("file", photoFile);
+        formData.append("project_id", String(selectedProjectId));
 
-        if (uploadError) {
-          console.warn("Upload foto gagal:", uploadError.message);
-          // Lanjut tanpa foto
+        const uploadRes = await fetch('/api/supervisor/upload', {
+          method: "POST",
+          body: formData,
+        });
+
+        if (uploadRes.ok) {
+          const { url } = await uploadRes.json();
+          photoUrl = url;
         } else {
-          const { data: urlData } = supabase.storage
-            .from("project-photos")
-            .getPublicUrl(filePath);
-          photoUrl = urlData.publicUrl;
+          console.warn("Upload foto gagal");
         }
       }
 
-      const { error } = await supabase.from("project_progress").insert([{
-        project_id:  Number(selectedProjectId),
-        recorded_by: user?.user_id ?? null,
-        percentage:  pct,
-        notes:       notes.trim() || null,
-        photo_url:   photoUrl,
-        update_date: updateDate,
-      }]);
+      // Simpan progress via API
+      const res = await fetch('/api/supervisor/progress', {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          project_id: Number(selectedProjectId),
+          percentage: pct,
+          notes: notes.trim() || null,
+          photo_url: photoUrl,
+          update_date: updateDate,
+        }),
+      });
 
-      if (error) throw error;
+      const result = await res.json();
+      if (!res.ok) {
+        throw new Error(result.error || "Gagal menyimpan progress");
+      }
 
       // Reset form
       setSuccessMsg("Progress berhasil disimpan!");
@@ -137,7 +137,7 @@ export default function UpdateProgressPage() {
       setPhotoPreview(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
 
-      // Refresh progress list
+      // Refresh data
       await fetchData();
     } catch (err: unknown) {
       alert("Gagal menyimpan progress: " + (err instanceof Error ? err.message : String(err)));
@@ -154,7 +154,7 @@ export default function UpdateProgressPage() {
   };
 
   const selectedProject = projects.find(p => p.project_id === Number(selectedProjectId));
-  const lastPct = selectedProjectId !== "" ? getLatestProgress(Number(selectedProjectId), progressList) : 0;
+  const lastPct = selectedProject?.latest_progress ?? 0;
   const initials = user?.fullname
     ? user.fullname.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()
     : "SV";
