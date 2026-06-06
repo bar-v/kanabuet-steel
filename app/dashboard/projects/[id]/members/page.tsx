@@ -23,7 +23,7 @@ export default function ProjectMembersPage({ params }: Props) {
   const supabase = createClient();
 
   const [projectId, setProjectId] = useState<number | null>(null);
-  const [project, setProject] = useState<Project | null>(null);
+  const [project, setProject] = useState<(Project & { supervisor?: { fullname: string; email: string } | null }) | null>(null);
   const [members, setMembers] = useState<ProjectMember[]>([]);
   const [workerHistory, setWorkerHistory] = useState<WorkerHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -52,10 +52,10 @@ export default function ProjectMembersPage({ params }: Props) {
       // Fetch project details
       const { data: projectData } = await supabase
         .from('projects')
-        .select('*')
+        .select('*, supervisor:users!supervisor_id(fullname, email)')
         .eq('project_id', projectId)
         .single();
-      if (projectData) setProject(projectData as Project);
+      if (projectData) setProject(projectData as any);
 
       // Fetch members for this project
       const { data: memberData } = await supabase
@@ -209,6 +209,32 @@ export default function ProjectMembersPage({ params }: Props) {
           </div>
         ) : (
           <div className="space-y-3">
+            {/* Show Supervisor if assigned */}
+            {project?.supervisor && (
+              <div className="rounded-xl border p-4 flex items-center gap-4 border-orange-300 bg-orange-50/30 group">
+                <div className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold text-sm shrink-0 shadow-sm border border-orange-600">
+                  {project.supervisor.fullname.charAt(0).toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="font-bold text-sm text-slate-800">{project.supervisor.fullname}</p>
+                    <span className="px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 text-[9px] font-black uppercase tracking-wider border border-orange-200">
+                      Ditugaskan Owner
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 mt-0.5">
+                    <span className="flex items-center gap-1 text-[11px] font-medium text-orange-600/80">
+                      <Briefcase size={10} /> Supervisor Utama
+                    </span>
+                    <span className="flex items-center gap-1 text-[11px] font-medium text-slate-500">
+                      <UserCircle2 size={10} /> Akun Terhubung
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Other Members */}
             {members.map((m) => (
               <div key={m.member_id}
                 className="rounded-xl border p-4 flex items-center gap-4 hover:border-orange-300 transition-colors group"

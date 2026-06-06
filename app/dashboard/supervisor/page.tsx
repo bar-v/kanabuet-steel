@@ -63,6 +63,13 @@ export default function SupervisorDashboard() {
   const [projects, setProjects] = useState<(Project & { latest_progress?: number })[]>([]);
   const [recentProgress, setRecentProgress] = useState<ProjectProgress[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setActiveProjectId(localStorage.getItem("active_project_id"));
+    }
+  }, []);
 
   // GPS state
   const [gps, setGps] = useState<GpsState>({ status: "idle" });
@@ -96,6 +103,17 @@ export default function SupervisorDashboard() {
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  // Validasi active_project_id
+  useEffect(() => {
+    if (!isLoading && projects.length > 0 && activeProjectId) {
+      const p = projects.find(proj => proj.project_id.toString() === activeProjectId);
+      if (!p) {
+        localStorage.removeItem("active_project_id");
+        setActiveProjectId(null);
+      }
+    }
+  }, [isLoading, projects, activeProjectId]);
 
   // Ambil GPS perangkat
   const handleAmbilGps = () => {
@@ -187,7 +205,7 @@ export default function SupervisorDashboard() {
     ? user.fullname.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()
     : "SV";
 
-  const activeProjects = projects.filter(p => p.status === "aktif");
+  const activeProject = activeProjectId ? projects.find(p => p.project_id.toString() === activeProjectId) : null;
   const pendingProjects = projects.filter(p => p.status === "menunggu_validasi");
 
   return (
@@ -302,53 +320,54 @@ export default function SupervisorDashboard() {
 
             {isLoading ? (
               <div className="h-32 rounded-xl border animate-pulse" style={{ background: C.card, borderColor: C.border }} />
-            ) : activeProjects.length === 0 ? (
+            ) : !activeProject ? (
               <div className="rounded-xl border p-6 text-center" style={{ background: C.card, borderColor: C.border }}>
                 <FolderOpen size={28} className="mx-auto mb-2" style={{ color: C.muted }} />
-                <p className="text-sm font-medium" style={{ color: C.muted }}>Tidak ada proyek aktif saat ini.</p>
+                <p className="text-sm font-medium mb-3" style={{ color: C.muted }}>Belum ada proyek aktif yang dipilih.</p>
+                <button
+                  onClick={() => router.push("/dashboard/supervisor/projects")}
+                  className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-xs font-bold transition-colors"
+                >
+                  Pilih Proyek dari Semua Proyek
+                </button>
               </div>
             ) : (
               <div className="space-y-3">
-                {activeProjects.slice(0, 3).map((project) => {
-                  const pct = project.latest_progress ?? 0;
-                  return (
-                    <div key={project.project_id}
-                      onClick={() => router.push(`/dashboard/supervisor/projects/${project.project_id}`)}
-                      className="rounded-xl border hover:border-orange-500/40 transition-colors cursor-pointer"
-                      style={{ background: C.card, borderColor: C.border }}>
-                      <div className="h-1 rounded-t-xl bg-gradient-to-r from-orange-500 via-amber-400 to-orange-600" />
-                      <div className="p-4">
-                        <div className="flex items-start justify-between gap-3 mb-3">
-                          <p className="text-sm font-bold line-clamp-2" style={{ color: C.text }}>{project.project_name}</p>
-                          <span className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide ${statusBadge(project.status)}`}>
-                            {statusLabel(project.status)}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1.5 mb-3" style={{ color: C.muted }}>
-                          <MapPin size={11} className="shrink-0" />
-                          <span className="text-[11px] font-medium truncate">{project.project_address}</span>
-                        </div>
-                        <div className="flex items-center gap-3 mb-1">
-                          <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: C.border }}>
-                            <div
-                              className={`h-full rounded-full transition-all duration-500 ${progressColor(pct)}`}
-                              style={{ width: `${pct}%` }}
-                            />
-                          </div>
-                          <span className="text-xs font-bold w-9 text-right" style={{ color: C.subtext }}>{pct}%</span>
-                        </div>
-                        {project.estimated_finish && (
-                          <div className="flex items-center gap-1.5 mt-2" style={{ color: C.muted }}>
-                            <CalendarClock size={11} className="shrink-0" />
-                            <span className="text-[11px] font-medium">
-                              Tenggat: <span className="text-amber-600 font-bold">{formatDate(project.estimated_finish)}</span>
-                            </span>
-                          </div>
-                        )}
-                      </div>
+                <div
+                  onClick={() => router.push(`/dashboard/supervisor/projects/${activeProject.project_id}`)}
+                  className="rounded-xl border hover:border-orange-500/40 transition-colors cursor-pointer"
+                  style={{ background: C.card, borderColor: C.border }}>
+                  <div className="h-1 rounded-t-xl bg-gradient-to-r from-orange-500 via-amber-400 to-orange-600" />
+                  <div className="p-4">
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <p className="text-sm font-bold line-clamp-2" style={{ color: C.text }}>{activeProject.project_name}</p>
+                      <span className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide ${statusBadge(activeProject.status)}`}>
+                        {statusLabel(activeProject.status)}
+                      </span>
                     </div>
-                  );
-                })}
+                    <div className="flex items-center gap-1.5 mb-3" style={{ color: C.muted }}>
+                      <MapPin size={11} className="shrink-0" />
+                      <span className="text-[11px] font-medium truncate">{activeProject.project_address}</span>
+                    </div>
+                    <div className="flex items-center gap-3 mb-1">
+                      <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: C.border }}>
+                        <div
+                          className={`h-full rounded-full transition-all duration-500 ${progressColor(activeProject.latest_progress ?? 0)}`}
+                          style={{ width: `${activeProject.latest_progress ?? 0}%` }}
+                        />
+                      </div>
+                      <span className="text-xs font-bold w-9 text-right" style={{ color: C.subtext }}>{activeProject.latest_progress ?? 0}%</span>
+                    </div>
+                    {activeProject.estimated_finish && (
+                      <div className="flex items-center gap-1.5 mt-2" style={{ color: C.muted }}>
+                        <CalendarClock size={11} className="shrink-0" />
+                        <span className="text-[11px] font-medium">
+                          Tenggat: <span className="text-amber-600 font-bold">{formatDate(activeProject.estimated_finish)}</span>
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
           </section>
@@ -360,7 +379,7 @@ export default function SupervisorDashboard() {
               {[
                 { label: "Update Progress",    Icon: RefreshCw, color: "text-orange-600", iconBg: "bg-orange-50",  border: "border-orange-200", href: "/dashboard/supervisor/progress"         },
                 { label: "Upload Dokumentasi", Icon: Camera,    color: "text-sky-600",    iconBg: "bg-sky-50",     border: "border-sky-200",    href: "/dashboard/supervisor/progress"         },
-                { label: "Validasi Lokasi GPS",Icon: MapPin,    color: "text-emerald-600",iconBg: "bg-emerald-50", border: "border-emerald-200",href: "#validasi-lokasi"                        },
+                { label: "Validasi Lokasi GPS",Icon: MapPin,    color: "text-emerald-600",iconBg: "bg-emerald-50", border: "border-emerald-200",href: "/dashboard/supervisor/location"                        },
                 { label: "Lihat Semua Proyek", Icon: FolderOpen,color: "text-violet-600", iconBg: "bg-violet-50",  border: "border-violet-200", href: "/dashboard/supervisor/projects"         },
               ].map(({ label, Icon, color, iconBg, border, href }) => (
                 <button
@@ -417,110 +436,6 @@ export default function SupervisorDashboard() {
             </section>
           )}
 
-          {/* 4. VALIDASI LOKASI GPS */}
-          <section id="validasi-lokasi">
-            <h2 className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: C.muted }}>
-              Dokumentasi &amp; Validasi Lokasi
-            </h2>
-
-            <div
-              className={`rounded-xl border p-4 transition-colors duration-300 ${gps.status === "success" ? "border-emerald-500/30" : ""}`}
-              style={{ background: C.card, borderColor: gps.status === "success" ? undefined : C.border }}
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <span className="w-7 h-7 rounded-lg bg-emerald-400/10 flex items-center justify-center text-emerald-400">
-                    <Navigation size={14} />
-                  </span>
-                  <p className="text-sm font-bold" style={{ color: C.text }}>Validasi Lokasi GPS</p>
-                </div>
-                {gps.status === "success" && (
-                  <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 uppercase">
-                    <CheckCheck size={10} /> Tervalidasi
-                  </span>
-                )}
-              </div>
-
-              {/* Pilih proyek untuk validasi */}
-              {pendingProjects.length > 0 && (
-                <div className="mb-3">
-                  <label className="block text-[11px] font-semibold mb-1.5" style={{ color: C.subtext }}>
-                    Pilih proyek untuk divalidasi
-                  </label>
-                  <select
-                    value={selectedValidationProject}
-                    onChange={(e) => setSelectedValidationProject(e.target.value === "" ? "" : Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-lg border text-sm font-medium outline-none focus:border-orange-500"
-                    style={{ borderColor: C.border, background: C.bg, color: C.text }}
-                  >
-                    <option value="">-- Pilih Proyek Menunggu Validasi --</option>
-                    {pendingProjects.map(p => (
-                      <option key={p.project_id} value={p.project_id}>{p.project_name}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {gps.status === "success" && (
-                <div className="space-y-1 mb-3">
-                  <p className="text-[11px] font-medium" style={{ color: C.muted }}>
-                    Lat: <span className="text-emerald-600 font-bold">{gps.lat.toFixed(6)}°</span>
-                  </p>
-                  <p className="text-[11px] font-medium" style={{ color: C.muted }}>
-                    Lng: <span className="text-emerald-600 font-bold">{gps.lng.toFixed(6)}°</span>
-                  </p>
-                  <p className="text-[10px] mt-1" style={{ color: C.muted }}>
-                    Diambil: {gps.timestamp.toLocaleTimeString("id-ID")}
-                  </p>
-                </div>
-              )}
-
-              {gps.status === "error" && (
-                <div className="mb-3 p-2 rounded-lg bg-red-50 border border-red-200">
-                  <p className="text-xs text-red-600 font-medium">{gps.message}</p>
-                </div>
-              )}
-
-              {gps.status === "idle" && (
-                <p className="text-[12px] mb-3" style={{ color: C.muted }}>
-                  Belum ada validasi lokasi. Ambil GPS untuk mendokumentasikan posisi saat ini.
-                </p>
-              )}
-
-              <div className="space-y-2">
-                <button
-                  onClick={handleAmbilGps}
-                  disabled={gps.status === "loading"}
-                  className={`w-full py-2.5 rounded-lg text-sm font-bold transition-all duration-200 active:scale-95 flex items-center justify-center gap-2 disabled:opacity-60 ${
-                    gps.status === "success"
-                      ? "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
-                      : "bg-emerald-500 text-white hover:bg-emerald-600 shadow-[0_4px_14px_rgba(22,163,74,0.25)]"
-                  }`}
-                >
-                  {gps.status === "loading" ? (
-                    <>
-                      <svg className="animate-spin" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>
-                      Mengambil GPS...
-                    </>
-                  ) : gps.status === "success" ? (
-                    <><CheckCheck size={15} /> Perbarui Lokasi GPS</>
-                  ) : (
-                    <><Navigation size={15} /> Ambil Lokasi GPS</>
-                  )}
-                </button>
-
-                {/* Tombol simpan validasi */}
-                {gps.status === "success" && selectedValidationProject && (
-                  <button
-                    onClick={handleSimpanValidasi}
-                    className="w-full py-2.5 rounded-lg text-sm font-bold bg-orange-500 text-white hover:bg-orange-600 shadow-[0_4px_14px_rgba(249,115,22,0.3)] transition-all duration-200 active:scale-95 flex items-center justify-center gap-2"
-                  >
-                    <CheckCircle2 size={15} /> Validasi & Mulai Proyek
-                  </button>
-                )}
-              </div>
-            </div>
-          </section>
 
           <div className="h-24 lg:h-4" />
         </main>

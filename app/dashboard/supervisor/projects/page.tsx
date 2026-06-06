@@ -218,7 +218,10 @@ export default function SupervisorProjectsListPage() {
                 return (
                   <div
                     key={project.project_id}
-                    onClick={() => router.push(`/dashboard/supervisor/projects/${project.project_id}`)}
+                    onClick={() => {
+                      localStorage.setItem("active_project_id", project.project_id.toString());
+                      router.push(`/dashboard/supervisor`);
+                    }}
                     className="rounded-xl border hover:border-orange-500/40 transition-all duration-150 cursor-pointer hover:shadow-sm"
                     style={{ background: C.card, borderColor: C.border }}
                   >

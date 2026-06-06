@@ -75,6 +75,16 @@ export default function SupervisorMaterialUsagePage() {
     fetchData();
   }, [fetchData]);
 
+  // Restore last selected project from localStorage
+  useEffect(() => {
+    if (projects.length > 0 && !selectedProjectId) {
+      const lastSelected = localStorage.getItem("lastSelectedProject");
+      if (lastSelected && projects.some(p => p.project_id.toString() === lastSelected)) {
+        setSelectedProjectId(lastSelected);
+      }
+    }
+  }, [projects, selectedProjectId]);
+
   const handleLogout = async () => {
     const { logoutAction } = await import('@/app/login/actions');
     await logoutAction();
@@ -250,7 +260,12 @@ export default function SupervisorMaterialUsagePage() {
                     <select
                       className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-1 focus:ring-orange-500 outline-none"
                       value={selectedProjectId}
-                      onChange={(e) => setSelectedProjectId(e.target.value)}
+                      onChange={(e) => {
+                        setSelectedProjectId(e.target.value);
+                        if (e.target.value) {
+                          localStorage.setItem("lastSelectedProject", e.target.value);
+                        }
+                      }}
                       required
                     >
                       <option value="">-- Pilih Proyek --</option>

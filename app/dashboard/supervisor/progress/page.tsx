@@ -77,6 +77,16 @@ export default function UpdateProgressPage() {
     }
   }, [selectedProjectId, projects]);
 
+  // Restore active project from localStorage
+  useEffect(() => {
+    if (projects.length > 0 && selectedProjectId === "") {
+      const lastSelected = localStorage.getItem("active_project_id");
+      if (lastSelected && projects.some(p => p.project_id.toString() === lastSelected)) {
+        setSelectedProjectId(Number(lastSelected));
+      }
+    }
+  }, [projects, selectedProjectId]);
+
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -267,7 +277,13 @@ export default function UpdateProgressPage() {
                 <div className="relative">
                   <select
                     value={selectedProjectId}
-                    onChange={(e) => setSelectedProjectId(e.target.value === "" ? "" : Number(e.target.value))}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setSelectedProjectId(val === "" ? "" : Number(val));
+                      if (val) {
+                        localStorage.setItem("active_project_id", val);
+                      }
+                    }}
                     className="w-full appearance-none px-3 py-2.5 rounded-lg border text-sm font-medium pr-9 cursor-pointer outline-none focus:border-orange-500"
                     style={{ borderColor: C.border, background: C.bg, color: C.text }}
                     required
