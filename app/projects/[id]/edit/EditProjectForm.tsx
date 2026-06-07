@@ -2,8 +2,22 @@
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { createClient } from '@/lib/supabase/client';
 import type { Project, ProjectStatus } from '@/lib/types/database';
+
+// Dynamic import for Leaflet map to avoid SSR issues
+const DynamicMapPicker = dynamic(() => import('@/components/MapPicker'), {
+  ssr: false,
+  loading: () => (
+    <div className="h-[300px] w-full bg-brand-bg rounded-lg flex items-center justify-center border border-brand-border text-brand-subtext font-medium text-sm">
+      <svg className="animate-spin mr-2" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+        <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+      </svg>
+      Memuat Peta...
+    </div>
+  )
+});
 
 type GpsState =
   | { status: 'idle' }
@@ -25,6 +39,9 @@ export default function EditProjectForm({ project }: { project: Partial<Project>
   const [projectAddress, setProjectAddress] = useState(project.project_address || '');
   const [status, setStatus] = useState<ProjectStatus>(project.status || 'menunggu_validasi');
 
+  const [position, setPosition] = useState<{lat: number, lng: number} | null>(
+    project.latitude && project.longitude ? { lat: project.latitude, lng: project.longitude } : null
+  );
   const [gps, setGps] = useState<GpsState>({ status: 'idle' });
 
   const handleAmbilGps = useCallback(() => {
@@ -34,14 +51,52 @@ export default function EditProjectForm({ project }: { project: Partial<Project>
     }
     setGps({ status: 'loading' });
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setGps({ status: 'success', lat: pos.coords.latitude, lng: pos.coords.longitude });
+      async (pos) => {
+        setGps((prev) => {
+          if (prev.status === 'idle') return prev;
+          return { status: 'success', lat: pos.coords.latitude, lng: pos.coords.longitude };
+        });
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        setPosition({ lat, lng });
+
+        try {
+          const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+          const data = await response.json();
+          if (data && data.display_name) {
+            setProjectAddress(data.display_name);
+          }
+        } catch (error) {
+          console.error('Gagal mendapatkan alamat dari koordinat:', error);
+        }
       },
       (err) => {
-        setGps({ status: 'error', message: `Gagal mengambil GPS: ${err.message}` });
+        setGps((prev) => {
+          if (prev.status === 'idle') return prev;
+          return { status: 'error', message: `Gagal mengambil GPS: ${err.message}` };
+        });
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );
+  }, []);
+
+  const handleBatalkanGps = useCallback(() => {
+    setGps({ status: 'idle' });
+    setPosition(null);
+    setProjectAddress('');
+  }, []);
+
+  const handleMapClick = useCallback(async (lat: number, lng: number) => {
+    setPosition({ lat, lng });
+    try {
+      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+      const data = await response.json();
+      if (data && data.display_name) {
+        setProjectAddress(data.display_name);
+      }
+    } catch (error) {
+      console.error('Gagal mendapatkan alamat dari koordinat:', error);
+    }
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -57,8 +112,8 @@ export default function EditProjectForm({ project }: { project: Partial<Project>
         estimated_finish: endDate || null,
         project_address: projectAddress,
         status:          status,
-        latitude:  gps.status === 'success' ? gps.lat : project.latitude,
-        longitude: gps.status === 'success' ? gps.lng : project.longitude,
+        latitude:  position?.lat ?? null,
+        longitude: position?.lng ?? null,
       };
 
       const { error } = await supabase
@@ -206,38 +261,60 @@ export default function EditProjectForm({ project }: { project: Partial<Project>
               />
             </div>
 
-            {/* GPS existing & update */}
-            {(project.latitude || project.longitude) && gps.status === 'idle' && (
-              <div className="text-[11px] font-medium text-slate-500 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200">
-                GPS saat ini: {project.latitude?.toFixed(6)}, {project.longitude?.toFixed(6)}
-              </div>
-            )}
+            {/* Peta Interaktif */}
+            <div className="w-full mt-2 relative z-0">
+              <DynamicMapPicker position={position} onLocationSelect={handleMapClick} />
+            </div>
 
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              <button
-                type="button"
-                onClick={handleAmbilGps}
-                disabled={gps.status === 'loading'}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-brand-border bg-brand-card text-brand-text text-sm font-medium hover:bg-brand-border/50 transition-colors disabled:opacity-60 whitespace-nowrap"
-              >
-                {gps.status === 'loading' ? (
-                  <><svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg> Mengambil GPS...</>
-                ) : (
-                  <>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="3" /></svg>
-                    Ambil GPS Perangkat
-                  </>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mt-2">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleAmbilGps}
+                  disabled={gps.status === 'loading'}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-brand-border bg-brand-card text-brand-text text-sm font-medium hover:bg-brand-border/50 transition-colors disabled:opacity-60 whitespace-nowrap"
+                >
+                  {gps.status === 'loading' ? (
+                    <><svg className="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg> Mengambil GPS...</>
+                  ) : (
+                    <>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="3" /></svg>
+                      Gunakan GPS Saat Ini
+                    </>
+                  )}
+                </button>
+                {position !== null && (
+                  <button
+                    type="button"
+                    onClick={handleBatalkanGps}
+                    className="flex items-center gap-1 px-3 py-2.5 rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 text-sm font-medium transition-colors whitespace-nowrap"
+                  >
+                    Batal
+                  </button>
                 )}
-              </button>
+              </div>
+              
+              <div className="text-xs font-mono text-brand-subtext bg-brand-card px-3 py-2 rounded border border-brand-border">
+                {position ? (
+                  <span>
+                    Lat: <span className="text-emerald-600 font-bold">{position.lat.toFixed(6)}</span>, 
+                    Lng: <span className="text-emerald-600 font-bold">{position.lng.toFixed(6)}</span>
+                  </span>
+                ) : (
+                  <span className="text-brand-muted">Koordinat belum ditentukan</span>
+                )}
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-3">
               {gps.status === 'success' && (
                 <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 text-xs font-mono">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-emerald-600 shrink-0"><polyline points="20 6 9 17 4 12" /></svg>
-                  <span className="text-emerald-700 font-bold">GPS Berhasil</span>
-                  <span className="text-emerald-600">{gps.lat.toFixed(6)}, {gps.lng.toFixed(6)}</span>
+                  <span className="text-emerald-700 font-bold">GPS Berhasil Diambil</span>
                 </div>
               )}
               {gps.status === 'error' && (
-                <p className="text-xs text-red-600 font-medium">{gps.message}</p>
+                <p className="text-xs text-red-600 font-medium bg-red-50 px-3 py-2 rounded-lg border border-red-200">{gps.message}</p>
               )}
             </div>
           </div>

@@ -10,6 +10,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import type { Project, ProjectProgress, ProjectStatus } from "@/lib/types/database";
 import DashboardShell from "@/components/layout/DashboardShell";
+import CreateProjectModal from "@/components/projects/CreateProjectModal";
 
 // ── Design tokens ─────────────────────────────────────────────
 const C = {
@@ -73,6 +74,7 @@ export default function ProjectManagementPage() {
   const [progressList, setProgressList] = useState<ProjectProgress[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const fetchProjects = useCallback(async () => {
     setIsLoading(true);
@@ -127,7 +129,7 @@ export default function ProjectManagementPage() {
 
   const headerActions = (
     <button
-      onClick={() => router.push("/projects/create")}
+      onClick={() => setShowCreateModal(true)}
       className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-bold shadow-sm transition-all active:scale-95"
     >
       <Plus size={16} />
@@ -294,6 +296,16 @@ export default function ProjectManagementPage() {
           </p>
         )}
       </section>
+
+      {showCreateModal && (
+        <CreateProjectModal
+          onClose={() => setShowCreateModal(false)}
+          onSuccess={() => {
+            setShowCreateModal(false);
+            fetchProjects();
+          }}
+        />
+      )}
     </DashboardShell>
   );
 }

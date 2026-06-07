@@ -24,18 +24,18 @@ function getStockStatus(m: Material) {
 }
 function getStatusBadge(s: string) {
   switch (s) {
-    case "tersedia":  return "bg-emerald-50 text-emerald-700 border-emerald-200";
+    case "tersedia": return "bg-emerald-50 text-emerald-700 border-emerald-200";
     case "min_stock": return "bg-amber-50 text-amber-700 border-amber-200";
-    case "habis":     return "bg-red-50 text-red-700 border-red-200";
-    default:          return "bg-slate-50 text-slate-700 border-slate-200";
+    case "habis": return "bg-red-50 text-red-700 border-red-200";
+    default: return "bg-slate-50 text-slate-700 border-slate-200";
   }
 }
 function getStatusLabel(s: string) {
   switch (s) {
-    case "tersedia":  return "Tersedia";
+    case "tersedia": return "Tersedia";
     case "min_stock": return "Stok Minimum";
-    case "habis":     return "Habis";
-    default:          return s;
+    case "habis": return "Habis";
+    default: return s;
   }
 }
 
@@ -92,8 +92,8 @@ function SupplierSearchSelect({
       </button>
 
       {isOpen && (
-        <div 
-          className="absolute z-[110] left-0 right-0 mt-1 bg-white border rounded-xl shadow-xl overflow-hidden flex flex-col max-h-60 animate-in fade-in slide-in-from-top-1 duration-150" 
+        <div
+          className="absolute z-[110] left-0 right-0 mt-1 bg-white border rounded-xl shadow-xl overflow-hidden flex flex-col max-h-60 animate-in fade-in slide-in-from-top-1 duration-150"
           style={{ borderColor }}
         >
           <div className="p-2 border-b flex items-center gap-2 bg-slate-50" style={{ borderColor }}>
@@ -475,7 +475,7 @@ export default function MaterialManagementPage() {
                   <label className="text-xs font-bold text-slate-700 ml-1">Satuan *</label>
                   <select value={formUnit} onChange={(e) => setFormUnit(e.target.value)} required
                     className="w-full mt-1 px-4 py-2.5 rounded-xl border text-sm font-medium outline-none focus:border-orange-500 bg-white" style={{ borderColor: C.border }}>
-                    <option value="">— Pilih Satuan —</option>
+                    <option value="">Pilih Satuan</option>
                     {standardUnits.map((u) => (
                       <option key={u} value={u}>{u}</option>
                     ))}

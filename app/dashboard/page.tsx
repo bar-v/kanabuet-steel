@@ -9,6 +9,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import type { Project, Material, DashboardStats, ProjectProgress } from "@/lib/types/database";
 import DashboardShell from "@/components/layout/DashboardShell";
+import CreateProjectModal from "@/components/projects/CreateProjectModal";
 
 // ── Helpers ───────────────────────────────────────────────────
 function statusBadge(s: string) {
@@ -48,12 +49,7 @@ const C = {
   text: "#0F172A", subtext: "#334155", muted: "#64748B",
 };
 
-const QUICK_ACTIONS = [
-  { label: "Lihat Semua Proyek", Icon: FolderOpen, href: "/dashboard/projects" },
-  { label: "Tambah Proyek", Icon: Plus, href: "/projects/create" },
-  { label: "Kelola Material", Icon: Package, href: "/dashboard/materials" },
-];
-
+// We will define QUICK_ACTIONS inside the component so it can access setShowCreateModal
 // ── Component ─────────────────────────────────────────────────
 export default function OwnerDashboard() {
   const router = useRouter();
@@ -68,6 +64,13 @@ export default function OwnerDashboard() {
   const [lowStockMaterials, setLowStockMaterials] = useState<Material[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [fabOpen, setFabOpen] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+
+  const QUICK_ACTIONS = [
+    { label: "Lihat Semua Proyek", Icon: FolderOpen, action: () => router.push("/dashboard/projects") },
+    { label: "Tambah Proyek", Icon: Plus, action: () => setShowCreateModal(true) },
+    { label: "Kelola Material", Icon: Package, action: () => router.push("/dashboard/materials") },
+  ];
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -175,7 +178,7 @@ export default function OwnerDashboard() {
                   <FolderOpen size={32} className="mx-auto mb-2" style={{ color: C.muted }} />
                   <p className="text-sm font-medium" style={{ color: C.muted }}>Belum ada proyek. Mulai buat proyek pertama.</p>
                   <button
-                    onClick={() => router.push("/projects/create")}
+                    onClick={() => setShowCreateModal(true)}
                     className="mt-3 px-4 py-2 bg-orange-500 text-white text-sm font-bold rounded-lg hover:bg-orange-600 transition-colors"
                   >
                     + Buat Proyek
@@ -275,10 +278,10 @@ export default function OwnerDashboard() {
       <div className="fixed bottom-6 right-6 z-50 lg:hidden flex flex-col items-end gap-3">
         {fabOpen && (
           <div className="flex flex-col items-end gap-2 mb-1">
-            {QUICK_ACTIONS.map(({ label, Icon, href }) => (
+            {QUICK_ACTIONS.map(({ label, Icon, action }) => (
               <button
                 key={label}
-                onClick={() => { setFabOpen(false); router.push(href); }}
+                onClick={() => { setFabOpen(false); action(); }}
                 className="flex items-center gap-2 px-4 py-2 border rounded-full text-sm font-semibold shadow-sm hover:border-orange-300 hover:bg-orange-50 transition-colors"
                 style={{ background: C.card, borderColor: C.border, color: C.text }}
               >
@@ -297,10 +300,10 @@ export default function OwnerDashboard() {
 
       {/* Quick actions bar desktop */}
       <div className="hidden lg:flex fixed bottom-6 right-7 z-30 items-center gap-3">
-        {QUICK_ACTIONS.map(({ label, Icon, href }) => (
+        {QUICK_ACTIONS.map(({ label, Icon, action }) => (
           <button
             key={label}
-            onClick={() => router.push(href)}
+            onClick={() => action()}
             className="flex items-center gap-2 px-4 py-2.5 border rounded-full text-sm font-semibold shadow-sm hover:border-orange-300 hover:bg-orange-50 hover:text-orange-700 transition-all duration-150"
             style={{ background: C.card, borderColor: C.border, color: C.text }}
           >
@@ -308,6 +311,16 @@ export default function OwnerDashboard() {
           </button>
         ))}
       </div>
+
+      {showCreateModal && (
+        <CreateProjectModal
+          onClose={() => setShowCreateModal(false)}
+          onSuccess={() => {
+            setShowCreateModal(false);
+            fetchData();
+          }}
+        />
+      )}
     </DashboardShell>
   );
 }

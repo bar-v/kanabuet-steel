@@ -10,6 +10,12 @@ import {
 } from "lucide-react";
 import { SUPERVISOR_NAV, isNavActive } from "@/lib/config/navigation";
 import type { Project, User } from "@/lib/types/database";
+import dynamic from 'next/dynamic';
+
+const MapPicker = dynamic(() => import('@/components/MapPicker'), {
+  ssr: false,
+  loading: () => <div className="h-[300px] w-full rounded-lg border border-slate-200 bg-slate-50 animate-pulse flex items-center justify-center text-slate-400"><MapPin size={32} /></div>
+});
 
 // ── Design tokens — light mode ──
 const C = {
@@ -43,6 +49,7 @@ export default function LocationValidationPage() {
   const [photosUploaded, setPhotosUploaded] = useState(false);
   const [photoFiles, setPhotoFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
 
   const fetchData = useCallback(async () => {
@@ -118,6 +125,33 @@ export default function LocationValidationPage() {
 
     setIsSubmitting(true);
     try {
+      const photoUrls: string[] = [];
+      
+      // Upload photos first
+      if (photoFiles.length > 0) {
+        for (let i = 0; i < photoFiles.length; i++) {
+          setUploadStatus(`Mengunggah foto ${i + 1}/${photoFiles.length}...`);
+          const file = photoFiles[i];
+          const formData = new FormData();
+          formData.append("file", file);
+          formData.append("project_id", String(selectedProjectId));
+          
+          const uploadRes = await fetch('/api/supervisor/upload', {
+            method: "POST",
+            body: formData,
+          });
+          
+          if (uploadRes.ok) {
+            const { url } = await uploadRes.json();
+            photoUrls.push(url);
+          } else {
+            console.warn("Upload foto gagal untuk file:", file.name);
+          }
+        }
+      }
+
+      setUploadStatus("Menyimpan data...");
+
       const res = await fetch(`/api/supervisor/projects/${selectedProjectId}/validate-location`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -125,6 +159,7 @@ export default function LocationValidationPage() {
           latitude: locationData.lat,
           longitude: locationData.lng,
           survey_notes: (surveyNotes.trim() + (materialEstimate.trim() ? `\n\n[Estimasi Material Awal]:\n${materialEstimate.trim()}` : "")) || null,
+          photo_urls: photoUrls,
         }),
       });
 
@@ -136,6 +171,7 @@ export default function LocationValidationPage() {
       }
 
       setIsSubmitting(false);
+      setUploadStatus(null);
       setIsSuccess(true);
 
       // Redirect setelah sukses
@@ -145,6 +181,7 @@ export default function LocationValidationPage() {
     } catch {
       alert("Terjadi kesalahan saat memvalidasi.");
       setIsSubmitting(false);
+      setUploadStatus(null);
     }
   };
 
@@ -313,23 +350,22 @@ export default function LocationValidationPage() {
                    <p className="text-xs text-slate-500">Ambil koordinat GPS di lokasi pengerjaan fisik proyek</p>
                  </div>
                  
-                 <div className="relative h-32 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-center">
-                    {locationData ? (
-                       <div className="flex flex-col items-center animate-in zoom-in duration-300">
-                          <MapPin size={32} className="text-emerald-500 drop-shadow-sm pb-1" />
-                          <div className="bg-white/80 backdrop-blur px-3 py-1.5 rounded-lg border border-emerald-100 mt-2">
-                             <p className="text-xs font-black text-emerald-700 text-center tracking-wide">
-                               {locationData.lat.toFixed(5)}° , {locationData.lng.toFixed(5)}°
-                             </p>
-                          </div>
-                       </div>
-                    ) : (
-                       <div className="text-slate-400 flex flex-col items-center">
-                          <MapIcon size={36} className="mb-2 opacity-60" />
-                          <p className="text-[11px] font-bold text-slate-500">Peta Belum Tervalidasi</p>
-                       </div>
-                    )}
-                 </div>
+                 {locationData ? (
+                    <div className="mt-2 animate-in fade-in duration-500">
+                      <MapPicker position={locationData} />
+                      <div className="mt-3 bg-emerald-50 text-emerald-700 px-4 py-2.5 rounded-lg border border-emerald-200 flex items-center justify-center gap-2">
+                         <MapPin size={16} />
+                         <p className="text-sm font-bold tracking-wide">
+                           {locationData.lat.toFixed(6)}° , {locationData.lng.toFixed(6)}°
+                         </p>
+                      </div>
+                    </div>
+                 ) : (
+                    <div className="h-32 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-center text-slate-400 flex-col">
+                       <MapIcon size={36} className="mb-2 opacity-60" />
+                       <p className="text-[11px] font-bold text-slate-500">Peta Belum Tervalidasi</p>
+                    </div>
+                 )}
 
                  {!locationData ? (
                    <button 
@@ -375,26 +411,52 @@ export default function LocationValidationPage() {
                  </div>
 
                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-800">Foto Lokasi Awal</label>
-                    <div 
-                      onClick={() => fileInputRef.current?.click()}
-                      className={`w-full border border-slate-200 rounded-xl h-24 flex flex-col items-center justify-center gap-1 cursor-pointer transition-all ${photosUploaded ? "bg-sky-50 border-sky-300" : "bg-slate-50 hover:border-orange-300"}`}
-                    >
-                      {photosUploaded ? (
-                        <>
-                          <CheckCircle2 size={24} className="text-sky-500 mb-1" />
-                          <p className="text-xs font-bold text-sky-700">{photoFiles.length} Foto Dipilih</p>
-                        </>
-                      ) : (
+                    <label className="text-xs font-bold text-slate-800">Foto Lokasi Awal (Maks 3)</label>
+                    
+                    {photoFiles.length > 0 && (
+                      <div className="grid grid-cols-3 gap-2 mb-2">
+                        {photoFiles.map((file, idx) => (
+                          <div key={idx} className="relative aspect-square rounded-lg border border-slate-200 overflow-hidden bg-slate-100">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={URL.createObjectURL(file)} alt="preview" className="w-full h-full object-cover" />
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const newFiles = [...photoFiles];
+                                newFiles.splice(idx, 1);
+                                setPhotoFiles(newFiles);
+                                setPhotosUploaded(newFiles.length > 0);
+                              }}
+                              className="absolute top-1 right-1 w-6 h-6 bg-white/80 backdrop-blur rounded-md flex items-center justify-center text-red-500 hover:bg-red-50 transition-colors"
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {photoFiles.length < 3 && (
+                      <div 
+                        onClick={() => fileInputRef.current?.click()}
+                        className="w-full border border-dashed border-slate-300 rounded-xl h-24 flex flex-col items-center justify-center gap-1 cursor-pointer transition-all bg-slate-50 hover:bg-slate-100 hover:border-orange-300"
+                      >
                         <Upload size={24} className="text-slate-400" />
-                      )}
-                    </div>
+                        <p className="text-[11px] font-bold text-slate-500">Klik untuk tambah foto</p>
+                      </div>
+                    )}
                     <input
                       ref={fileInputRef}
                       type="file"
                       accept="image/*"
                       multiple
-                      onChange={handlePhotoUpload}
+                      onChange={(e) => {
+                         const files = e.target.files;
+                         if (!files) return;
+                         const newArr = [...photoFiles, ...Array.from(files)].slice(0, 3);
+                         setPhotoFiles(newArr);
+                         setPhotosUploaded(newArr.length > 0);
+                      }}
                       className="hidden"
                     />
                  </div>
@@ -415,7 +477,7 @@ export default function LocationValidationPage() {
                 className="w-full px-8 py-3.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded-xl shadow-lg shadow-orange-500/30 transition-all active:scale-[0.98] disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed flex items-center justify-center gap-2 shrink-0"
               >
                 {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : null}
-                {isSubmitting ? "Memproses Validasi..." : "Validasi & Mulai Proyek"}
+                {isSubmitting ? (uploadStatus || "Memproses Validasi...") : "Validasi & Mulai Proyek"}
               </button>
               <p className="text-[11px] font-medium text-slate-500 mt-1">
                  *Pastikan data valid. Menekan tombol ini akan mengubah status proyek menjadi <span className="font-bold text-orange-500">Aktif</span>

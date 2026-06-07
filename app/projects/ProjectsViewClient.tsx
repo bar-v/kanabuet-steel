@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import ProjectCard from '@/components/ProjectCard';
+import CreateProjectModal from '@/components/projects/CreateProjectModal';
 
 interface ProjectsViewClientProps {
   projects: any[];
@@ -18,6 +19,7 @@ export default function ProjectsViewClient({ projects }: ProjectsViewClientProps
   const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || 'all');
   const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'newest');
   const [currentPage, setCurrentPage] = useState(Number(searchParams.get('page')) || 1);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const itemsPerPage = 12;
 
@@ -113,12 +115,12 @@ export default function ProjectsViewClient({ projects }: ProjectsViewClientProps
           <h1 className="text-3xl font-bold tracking-tight text-brand-text mb-1">Manajemen Proyek</h1>
           <p className="text-brand-subtext">Pantau operasional dan kemajuan fabrikasi Anda.</p>
         </div>
-        <Link href="/projects/create" className="bg-brand-primary hover:bg-brand-accent text-white font-semibold py-2.5 px-6 rounded-xl shadow-sm hover:shadow-lg hover:shadow-brand-primary/20 transition-all flex items-center justify-center gap-2 w-full md:w-fit">
+        <button onClick={() => setShowCreateModal(true)} className="bg-brand-primary hover:bg-brand-accent text-white font-semibold py-2.5 px-6 rounded-xl shadow-sm hover:shadow-lg hover:shadow-brand-primary/20 transition-all flex items-center justify-center gap-2 w-full md:w-fit">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
           </svg>
           Tambah Proyek
-        </Link>
+        </button>
       </div>
 
       {/* Dashboard Stats */}
@@ -225,9 +227,9 @@ export default function ProjectsViewClient({ projects }: ProjectsViewClientProps
               : "Sistem tidak menemukan proyek yang cocok dengan filter atau kata kunci Anda saat ini."}
           </p>
           {projects.length === 0 && (
-            <Link href="/projects/create" className="bg-brand-primary hover:bg-brand-accent text-white font-semibold py-2.5 px-6 rounded-xl flex shadow-sm transition-all">
+            <button onClick={() => setShowCreateModal(true)} className="bg-brand-primary hover:bg-brand-accent text-white font-semibold py-2.5 px-6 rounded-xl flex shadow-sm transition-all">
               Tambah Proyek
-            </Link>
+            </button>
           )}
         </div>
       ) : (
@@ -280,6 +282,15 @@ export default function ProjectsViewClient({ projects }: ProjectsViewClientProps
         </>
       )}
 
+      {showCreateModal && (
+        <CreateProjectModal
+          onClose={() => setShowCreateModal(false)}
+          onSuccess={() => {
+            setShowCreateModal(false);
+            router.refresh();
+          }}
+        />
+      )}
     </div>
   );
 }

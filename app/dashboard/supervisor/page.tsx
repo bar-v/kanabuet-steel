@@ -375,31 +375,47 @@ export default function SupervisorDashboard() {
           {/* 2. QUICK ACTIONS */}
           <section>
             <h2 className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: C.muted }}>Aksi Cepat</h2>
+            
+            {activeProject?.status === "menunggu_validasi" && (
+              <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 flex items-start gap-2.5">
+                <AlertCircle size={16} className="text-red-600 mt-0.5 shrink-0" />
+                <p className="text-xs font-medium text-red-700 leading-relaxed">
+                  Lokasi proyek harus divalidasi terlebih dahulu sebelum progres dapat diperbarui.
+                </p>
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-4">
               {[
-                { label: "Update Progress",    Icon: RefreshCw, color: "text-orange-600", iconBg: "bg-orange-50",  border: "border-orange-200", href: "/dashboard/supervisor/progress"         },
-                { label: "Upload Dokumentasi", Icon: Camera,    color: "text-sky-600",    iconBg: "bg-sky-50",     border: "border-sky-200",    href: "/dashboard/supervisor/progress"         },
-                { label: "Validasi Lokasi GPS",Icon: MapPin,    color: "text-emerald-600",iconBg: "bg-emerald-50", border: "border-emerald-200",href: "/dashboard/supervisor/location"                        },
-                { label: "Lihat Semua Proyek", Icon: FolderOpen,color: "text-violet-600", iconBg: "bg-violet-50",  border: "border-violet-200", href: "/dashboard/supervisor/projects"         },
-              ].map(({ label, Icon, color, iconBg, border, href }) => (
-                <button
-                  key={label}
-                  onClick={() => {
-                    if (href === "#validasi-lokasi") {
-                      document.getElementById("validasi-lokasi")?.scrollIntoView({ behavior: "smooth" });
-                    } else {
-                      router.push(href);
-                    }
-                  }}
-                  className={`flex flex-col items-center gap-2.5 p-4 rounded-xl border hover:shadow-lg transition-all duration-150 active:scale-95 ${border}`}
-                  style={{ background: C.card }}
-                >
-                  <span className={`w-10 h-10 rounded-lg flex items-center justify-center ${iconBg} ${color}`}>
-                    <Icon size={20} />
-                  </span>
-                  <span className="text-xs font-semibold text-center leading-tight" style={{ color: C.subtext }}>{label}</span>
-                </button>
-              ))}
+                { label: "Update Progress",    Icon: RefreshCw, color: "text-orange-600", iconBg: "bg-orange-50",  border: "border-orange-200", href: "/dashboard/supervisor/progress", requiresValidation: true },
+                { label: "Upload Dokumentasi", Icon: Camera,    color: "text-sky-600",    iconBg: "bg-sky-50",     border: "border-sky-200",    href: "/dashboard/supervisor/progress", requiresValidation: true },
+                { label: "Validasi Lokasi GPS",Icon: MapPin,    color: "text-emerald-600",iconBg: "bg-emerald-50", border: "border-emerald-200",href: "/dashboard/supervisor/location", requiresValidation: false },
+                { label: "Lihat Semua Proyek", Icon: FolderOpen,color: "text-violet-600", iconBg: "bg-violet-50",  border: "border-violet-200", href: "/dashboard/supervisor/projects", requiresValidation: false },
+              ].map(({ label, Icon, color, iconBg, border, href, requiresValidation }) => {
+                const isDisabled = requiresValidation && activeProject?.status === "menunggu_validasi";
+                return (
+                  <button
+                    key={label}
+                    disabled={isDisabled}
+                    onClick={() => {
+                      if (href === "#validasi-lokasi") {
+                        document.getElementById("validasi-lokasi")?.scrollIntoView({ behavior: "smooth" });
+                      } else {
+                        router.push(href);
+                      }
+                    }}
+                    className={`flex flex-col items-center gap-2.5 p-4 rounded-xl border transition-all duration-150 
+                      ${isDisabled ? "opacity-50 cursor-not-allowed grayscale bg-slate-50" : `hover:shadow-lg active:scale-95 ${border}`}
+                    `}
+                    style={isDisabled ? undefined : { background: C.card }}
+                  >
+                    <span className={`w-10 h-10 rounded-lg flex items-center justify-center ${iconBg} ${color}`}>
+                      <Icon size={20} />
+                    </span>
+                    <span className="text-xs font-semibold text-center leading-tight" style={{ color: C.subtext }}>{label}</span>
+                  </button>
+                );
+              })}
             </div>
           </section>
 

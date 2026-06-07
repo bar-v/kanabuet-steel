@@ -81,7 +81,7 @@ export default function UpdateProgressPage() {
   useEffect(() => {
     if (projects.length > 0 && selectedProjectId === "") {
       const lastSelected = localStorage.getItem("active_project_id");
-      if (lastSelected && projects.some(p => p.project_id.toString() === lastSelected)) {
+      if (lastSelected && projects.some(p => p.project_id.toString() === lastSelected && p.status === "aktif")) {
         setSelectedProjectId(Number(lastSelected));
       }
     }
@@ -289,7 +289,7 @@ export default function UpdateProgressPage() {
                     required
                   >
                     <option value="">-- Pilih Proyek --</option>
-                    {projects.map(p => (
+                    {projects.filter(p => p.status === "aktif").map(p => (
                       <option key={p.project_id} value={p.project_id}>{p.project_name}</option>
                     ))}
                   </select>

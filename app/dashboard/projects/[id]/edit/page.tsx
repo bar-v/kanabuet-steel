@@ -176,9 +176,8 @@ export default function EditProjectPage({ params }: Props) {
             <div className="flex flex-wrap gap-2">
               {STATUS_OPTIONS.map(({ label, value }) => (
                 <button key={value} type="button" onClick={() => setStatus(value)}
-                  className={`px-4 py-2 rounded-lg text-xs font-bold border transition-all ${
-                    status === value ? "bg-orange-500 border-orange-500 text-white" : "hover:bg-slate-50"
-                  }`}
+                  className={`px-4 py-2 rounded-lg text-xs font-bold border transition-all ${status === value ? "bg-orange-500 border-orange-500 text-white" : "hover:bg-slate-50"
+                    }`}
                   style={status !== value ? { borderColor: C.border, color: C.subtext } : undefined}
                 >
                   {label}
@@ -186,10 +185,10 @@ export default function EditProjectPage({ params }: Props) {
               ))}
             </div>
           </div>
-          
+
           <div>
             <label className="block mb-1.5 text-xs font-bold uppercase tracking-wide" style={{ color: C.muted }}>Supervisor Proyek</label>
-            <select 
+            <select
               value={supervisorId} onChange={(e) => setSupervisorId(e.target.value)}
               className="w-full px-4 py-2.5 rounded-lg border text-sm font-medium outline-none focus:border-orange-500 transition-colors"
               style={{ borderColor: C.border }}

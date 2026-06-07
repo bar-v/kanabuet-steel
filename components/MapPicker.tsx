@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 
@@ -19,6 +19,7 @@ const DEFAULT_CENTER = { lat: 5.548290, lng: 95.323753 }; // Banda Aceh
 
 interface MapPickerProps {
   position: { lat: number; lng: number } | null;
+  onLocationSelect?: (lat: number, lng: number) => void;
 }
 
 function LocationMarker({ position }: { position: { lat: number; lng: number } | null }) {
@@ -35,7 +36,18 @@ function LocationMarker({ position }: { position: { lat: number; lng: number } |
   );
 }
 
-export default function MapPicker({ position }: MapPickerProps) {
+function MapClickHandler({ onLocationSelect }: { onLocationSelect?: (lat: number, lng: number) => void }) {
+  useMapEvents({
+    click(e) {
+      if (onLocationSelect) {
+        onLocationSelect(e.latlng.lat, e.latlng.lng);
+      }
+    },
+  });
+  return null;
+}
+
+export default function MapPicker({ position, onLocationSelect }: MapPickerProps) {
   return (
     <div className="h-[300px] w-full rounded-lg overflow-hidden border border-slate-200 relative z-0">
       <MapContainer 
@@ -49,6 +61,7 @@ export default function MapPicker({ position }: MapPickerProps) {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <LocationMarker position={position} />
+        <MapClickHandler onLocationSelect={onLocationSelect} />
       </MapContainer>
     </div>
   );
