@@ -6,7 +6,7 @@ import dynamic from "next/dynamic";
 import {
   ArrowLeft, MapPin, CalendarClock, UserCircle2,
   Activity, Upload, ChevronRight, Users, Edit2,
-  Package, AlertTriangle, ImageIcon, Plus,
+  Package, AlertTriangle, ImageIcon, Plus, Navigation
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type {
@@ -140,6 +140,16 @@ export default function ProjectDetailPage({ params }: Props) {
               <div>
                 <p className="text-[10px] font-medium" style={{ color: C.muted }}>Lokasi</p>
                 <p className="text-xs font-semibold leading-snug" style={{ color: C.text }}>{project.project_address}</p>
+                {project.latitude && project.longitude && (
+                  <a 
+                    href={`https://www.google.com/maps?q=${project.latitude},${project.longitude}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 mt-1.5 text-[10px] font-bold text-sky-500 hover:text-sky-600 hover:underline transition-colors"
+                  >
+                    <Navigation size={10} /> Buka di Maps
+                  </a>
+                )}
               </div>
             </div>
             <div className="flex items-start gap-2">

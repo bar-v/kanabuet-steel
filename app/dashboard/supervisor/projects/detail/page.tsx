@@ -157,8 +157,11 @@ export default function SupervisorProjectDetail() {
             <span className="hidden sm:block">Kembali</span>
           </button>
 
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 flex items-center gap-2">
             <h1 className="text-sm font-bold truncate" style={{ color: C.text }}>Detail Proyek</h1>
+            <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-red-100 text-red-600 border border-red-200 shadow-sm animate-pulse">
+              MOCKUP DATA
+            </span>
           </div>
         </header>
 

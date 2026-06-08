@@ -6,7 +6,7 @@ import { useRouter, usePathname, useParams } from "next/navigation";
 import {
   LayoutGrid, FolderOpen, TrendingUp, Package, LogOut, Menu, X, ArrowLeft,
   MapPin, CalendarClock, Activity, Upload, ImageIcon, ChevronRight, Plus,
-  Search, AlertTriangle, CheckCircle2, Users, Clock, FileText, UserCircle2
+  Search, AlertTriangle, CheckCircle2, Users, Clock, FileText, UserCircle2, Navigation
 } from "lucide-react";
 import { SUPERVISOR_NAV, isNavActive } from "@/lib/config/navigation";
 import type { Project, ProjectProgress, ProjectMember, Material, User } from "@/lib/types/database";
@@ -303,6 +303,16 @@ export default function SupervisorProjectDetail() {
                         <div>
                           <p className="text-[10px] font-medium" style={{ color: C.muted }}>Lokasi</p>
                           <p className="text-xs font-semibold leading-snug" style={{ color: C.text }}>{project.project_address}</p>
+                          {project.latitude && project.longitude && (
+                            <a 
+                              href={`https://www.google.com/maps?q=${project.latitude},${project.longitude}`} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 mt-1.5 text-[10px] font-bold text-sky-500 hover:text-sky-600 hover:underline transition-colors"
+                            >
+                              <Navigation size={10} /> Buka di Maps
+                            </a>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-start gap-2">

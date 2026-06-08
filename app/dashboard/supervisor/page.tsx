@@ -390,7 +390,7 @@ export default function SupervisorDashboard() {
                 { label: "Update Progress", Icon: RefreshCw, color: "text-orange-600", iconBg: "bg-orange-50", border: "border-orange-200", href: "/dashboard/supervisor/progress", requiresValidation: true },
                 { label: "Upload Dokumentasi", Icon: Camera, color: "text-sky-600", iconBg: "bg-sky-50", border: "border-sky-200", href: "/dashboard/supervisor/progress", requiresValidation: true },
                 { label: "Validasi Lokasi GPS", Icon: MapPin, color: "text-emerald-600", iconBg: "bg-emerald-50", border: "border-emerald-200", href: "/dashboard/supervisor/location", requiresValidation: false },
-                { label: "Lihat Semua Proyek", Icon: FolderOpen, color: "text-violet-600", iconBg: "bg-violet-50", border: "border-violet-200", href: "/dashboard/supervisor/projects", requiresValidation: false },
+                { label: "Catat Material Keluar", Icon: Package, color: "text-violet-600", iconBg: "bg-violet-50", border: "border-violet-200", href: "/dashboard/supervisor/materials", requiresValidation: true },
               ].map(({ label, Icon, color, iconBg, border, href, requiresValidation }) => {
                 const isDisabled = requiresValidation && activeProject?.status === "menunggu_validasi";
                 return (

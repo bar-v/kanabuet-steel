@@ -52,10 +52,10 @@ function InitialLocationMarker({ position, radius }: { position: { lat: number; 
   return (
     <>
       <Marker position={position} opacity={0.6}></Marker>
-      <Circle 
-        center={position} 
-        radius={radius || 5} 
-        pathOptions={{ color: 'red', fillColor: 'red', fillOpacity: 0.1 }} 
+      <Circle
+        center={position}
+        radius={radius || 5}
+        pathOptions={{ color: '#f97316', fillColor: '#f97316', fillOpacity: 0.1, weight: 1 }}
       />
     </>
   );
@@ -74,13 +74,13 @@ function MapClickHandler({ onLocationSelect }: { onLocationSelect?: (lat: number
 
 export default function MapPicker({ position, onLocationSelect, initialPosition, initialRadius }: MapPickerProps) {
   const center = position || initialPosition || DEFAULT_CENTER;
-  
+
   return (
     <div className="h-[300px] w-full rounded-lg overflow-hidden border border-slate-200 relative z-0">
-      <MapContainer 
-        center={center} 
-        zoom={18} 
-        scrollWheelZoom={true} 
+      <MapContainer
+        center={center}
+        zoom={18}
+        scrollWheelZoom={true}
         className="h-full w-full z-0"
       >
         <TileLayer

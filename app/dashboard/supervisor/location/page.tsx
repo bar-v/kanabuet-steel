@@ -375,6 +375,16 @@ export default function LocationValidationPage() {
                       <div>
                         <p className="text-[10px] font-medium" style={{ color: C.muted }}>Lokasi Sementara</p>
                         <p className="text-xs font-semibold leading-snug" style={{ color: C.text }}>{selectedProject.project_address}</p>
+                        {selectedProject.latitude && selectedProject.longitude && (
+                          <a
+                            href={`https://www.google.com/maps?q=${selectedProject.latitude},${selectedProject.longitude}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 mt-1.5 text-[10px] font-bold text-sky-500 hover:text-sky-600 hover:underline transition-colors"
+                          >
+                            <Navigation size={10} /> Buka di Maps
+                          </a>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-start gap-2">
@@ -441,9 +451,18 @@ export default function LocationValidationPage() {
                     {isLocating ? "Mengambil GPS..." : "Ambil Titik Koordinat GPS"}
                   </button>
                 ) : (
-                  <div className="flex items-center justify-center gap-2 py-3 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-700">
-                    <CheckCircle2 size={16} className="shrink-0" />
-                    <p className="text-xs font-bold">Titik Koordinat GPS Terkunci</p>
+                  <div className="flex gap-2">
+                    <div className="flex-1 flex items-center justify-center gap-2 py-3 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-700">
+                      <CheckCircle2 size={16} className="shrink-0" />
+                      <p className="text-xs font-bold">Titik Koordinat GPS Terkunci</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setLocationData(null)}
+                      className="px-4 py-3 border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 text-xs font-bold rounded-lg transition-colors whitespace-nowrap active:scale-95"
+                    >
+                      Batal
+                    </button>
                   </div>
                 )}
               </section>
