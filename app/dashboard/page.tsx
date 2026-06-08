@@ -251,7 +251,7 @@ export default function OwnerDashboard() {
                       <div className="flex items-center justify-between mb-3">
                         <p className="text-sm font-bold" style={{ color: C.text }}>{m.material_name}</p>
                         <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 uppercase">
-                          <AlertTriangle size={9} /> Stok Minimum
+                          <AlertTriangle size={9} /> Minimum
                         </span>
                       </div>
                       <div className="flex items-end justify-between mb-2">

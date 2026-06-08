@@ -20,6 +20,7 @@ const C = {
 };
 
 import { SUPERVISOR_NAV, isNavActive } from "@/lib/config/navigation";
+import { useLogout } from "@/lib/auth/client";
 
 // ── Helpers ───────────────────────────────────────────────────
 function statusBadge(s: string) {
@@ -194,12 +195,7 @@ export default function SupervisorDashboard() {
     }
   };
 
-  const handleLogout = async () => {
-    const { logoutAction } = await import('@/app/login/actions');
-    await logoutAction();
-    document.cookie = "system_role=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-    router.push("/login");
-  };
+  const handleLogout = useLogout();
 
   const initials = user?.fullname
     ? user.fullname.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()

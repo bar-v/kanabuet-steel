@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { SUPERVISOR_NAV, isNavActive } from "@/lib/config/navigation";
 import type { Project, Material, User } from "@/lib/types/database";
+import { useLogout } from "@/lib/auth/client";
 
 const C = {
   bg: "#F8FAFC", card: "#FFFFFF", border: "#E2E8F0",
@@ -127,12 +128,7 @@ export default function SupervisorMaterialUsagePage() {
     }
   }, [projects, selectedProjectId]);
 
-  const handleLogout = async () => {
-    const { logoutAction } = await import('@/app/login/actions');
-    await logoutAction();
-    document.cookie = "system_role=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-    router.push("/login");
-  };
+  const handleLogout = useLogout();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -17,6 +17,7 @@ const C = {
 };
 
 import { SUPERVISOR_NAV, isNavActive } from "@/lib/config/navigation";
+import { useLogout } from "@/lib/auth/client";
 
 function progressColor(pct: number) {
   if (pct >= 80) return "bg-emerald-500";
@@ -180,12 +181,7 @@ export default function UpdateProgressPage() {
     }
   };
 
-  const handleLogout = async () => {
-    const { logoutAction } = await import('@/app/login/actions');
-    await logoutAction();
-    document.cookie = "system_role=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-    router.push("/login");
-  };
+  const handleLogout = useLogout();
 
   const selectedProject = projects.find(p => p.project_id === Number(selectedProjectId));
   const lastPct = selectedProject?.latest_progress ?? 0;

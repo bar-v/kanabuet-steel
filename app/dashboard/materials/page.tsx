@@ -33,7 +33,7 @@ function getStatusBadge(s: string) {
 function getStatusLabel(s: string) {
   switch (s) {
     case "tersedia": return "Tersedia";
-    case "min_stock": return "Stok Minimum";
+    case "min_stock": return "Minimum";
     case "habis": return "Habis";
     default: return s;
   }
@@ -298,7 +298,7 @@ export default function MaterialManagementPage() {
   const STATS = [
     { label: "Total Material", value: totalMaterials, color: "text-slate-600", iconBg: "bg-slate-50", Icon: Boxes },
     { label: "Tersedia", value: availableCount, color: "text-emerald-600", iconBg: "bg-emerald-50", Icon: Package },
-    { label: "Stok Minimum", value: lowStockCount, color: "text-amber-600", iconBg: "bg-amber-50", Icon: AlertTriangle },
+    { label: "Minimum", value: lowStockCount, color: "text-amber-600", iconBg: "bg-amber-50", Icon: AlertTriangle },
     { label: "Habis", value: outOfStockCount, color: "text-red-600", iconBg: "bg-red-50", Icon: Archive },
   ];
 
@@ -496,7 +496,7 @@ export default function MaterialManagementPage() {
                     className="w-full mt-1 px-4 py-2.5 rounded-xl border text-sm font-bold outline-none focus:border-orange-500" style={{ borderColor: C.border }} />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-700 ml-1">Stok Minimum</label>
+                  <label className="text-xs font-bold text-slate-700 ml-1">Minimum</label>
                   <input type="number" min="0" value={formMinStock} onChange={(e) => setFormMinStock(Number(e.target.value))}
                     className="w-full mt-1 px-4 py-2.5 rounded-xl border text-sm font-bold outline-none focus:border-orange-500" style={{ borderColor: C.border }} />
                 </div>
