@@ -6,7 +6,7 @@ import { useRouter, usePathname, useParams } from "next/navigation";
 import {
   LayoutGrid, FolderOpen, TrendingUp, Package, LogOut, Menu, X, ArrowLeft,
   MapPin, CalendarClock, Activity, Upload, ImageIcon, ChevronRight, Plus,
-  Search, AlertTriangle, CheckCircle2, Users, Clock, FileText,
+  Search, AlertTriangle, CheckCircle2, Users, Clock, FileText, UserCircle2
 } from "lucide-react";
 import { SUPERVISOR_NAV, isNavActive } from "@/lib/config/navigation";
 import type { Project, ProjectProgress, ProjectMember, Material, User } from "@/lib/types/database";
@@ -277,33 +277,55 @@ export default function SupervisorProjectDetail() {
             </div>
           ) : (
             <>
-              {/* Project Info Header */}
+              {/* Project Info Card */}
               <div className="p-4 sm:p-5 lg:p-7 pb-0">
-                <div className="rounded-xl border overflow-hidden bg-white" style={{ borderColor: C.border }}>
+                <div className="rounded-xl border overflow-hidden" style={{ background: C.card, borderColor: C.border }}>
                   <div className="h-1 bg-gradient-to-r from-orange-500 via-amber-400 to-orange-600" />
                   <div className="p-4 space-y-3">
-                    <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start justify-between gap-3 mb-2">
                       <p className="text-sm sm:text-base font-bold leading-tight" style={{ color: C.text }}>{project.project_name}</p>
                       <span className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide ${statusBadge(project.status)}`}>
                         {statusLabel(project.status)}
                       </span>
                     </div>
-                    <div className="flex items-center gap-1.5" style={{ color: C.muted }}>
-                      <MapPin size={13} className="shrink-0 text-orange-500" />
-                      <span className="text-xs font-medium truncate">{project.project_address}</span>
-                    </div>
-                    {/* Progress bar */}
-                    <div className="flex items-center gap-3">
-                      <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: C.border }}>
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-semibold" style={{ color: C.subtext }}>Progres Pekerjaan</span>
+                        <span className="text-lg font-black text-orange-400">{latestProgress}%</span>
+                      </div>
+                      <div className="h-2.5 rounded-full overflow-hidden" style={{ background: C.border }}>
                         <div className={`h-full rounded-full transition-all duration-500 ${progressColor(latestProgress)}`} style={{ width: `${latestProgress}%` }} />
                       </div>
-                      <span className="text-xs font-bold w-9 text-right" style={{ color: C.subtext }}>{latestProgress}%</span>
                     </div>
-                    <div className="flex items-center gap-4 text-[11px] font-medium" style={{ color: C.muted }}>
-                      <span className="flex items-center gap-1"><Users size={11} /> {membersCount} anggota</span>
-                      {project.estimated_finish && (
-                        <span className="flex items-center gap-1"><CalendarClock size={11} /> Tenggat: {formatDate(project.estimated_finish)}</span>
-                      )}
+                    <div className="grid grid-cols-2 gap-3 pt-1">
+                      <div className="flex items-start gap-2">
+                        <MapPin size={13} className="text-orange-400 mt-0.5 shrink-0" />
+                        <div>
+                          <p className="text-[10px] font-medium" style={{ color: C.muted }}>Lokasi</p>
+                          <p className="text-xs font-semibold leading-snug" style={{ color: C.text }}>{project.project_address}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <UserCircle2 size={13} className="text-orange-400 mt-0.5 shrink-0" />
+                        <div>
+                          <p className="text-[10px] font-medium" style={{ color: C.muted }}>Klien</p>
+                          <p className="text-xs font-semibold" style={{ color: C.text }}>{project.client_name}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <CalendarClock size={13} className="text-orange-400 mt-0.5 shrink-0" />
+                        <div>
+                          <p className="text-[10px] font-medium" style={{ color: C.muted }}>Mulai</p>
+                          <p className="text-xs font-semibold" style={{ color: C.text }}>{formatDate(project.start_date)}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <CalendarClock size={13} className="text-amber-400 mt-0.5 shrink-0" />
+                        <div>
+                          <p className="text-[10px] font-medium" style={{ color: C.muted }}>Tenggat</p>
+                          <p className="text-xs font-semibold text-amber-400">{formatDate(project.estimated_finish)}</p>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>

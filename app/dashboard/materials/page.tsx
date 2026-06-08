@@ -161,6 +161,7 @@ export default function MaterialManagementPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   // Modal states
+  const [mounted, setMounted] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showRestockModal, setShowRestockModal] = useState(false);
   const [editingMaterial, setEditingMaterial] = useState<MaterialWithSupplier | null>(null);
@@ -198,7 +199,10 @@ export default function MaterialManagementPage() {
     }
   }, [supabase]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    setMounted(true);
+    fetchData();
+  }, [fetchData]);
 
   const resetForm = () => {
     setFormName(""); setFormCategory(""); setFormUnit(""); setFormStock(0); setFormMinStock(0); setFormSupplierId("");
@@ -314,7 +318,7 @@ export default function MaterialManagementPage() {
           </div>
         </button>
         <button onClick={() => openRestock(materials[0])}
-          disabled={materials.length === 0}
+          disabled={!mounted || materials.length === 0}
           className="group p-4 rounded-xl border flex items-center gap-4 hover:border-emerald-500 hover:shadow-md transition-all duration-200 bg-white disabled:opacity-50"
           style={{ borderColor: C.border }}>
           <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform">

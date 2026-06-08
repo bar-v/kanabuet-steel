@@ -23,16 +23,16 @@ import { SUPERVISOR_NAV, isNavActive } from "@/lib/config/navigation";
 
 // ── Helpers ───────────────────────────────────────────────────
 function statusBadge(s: string) {
-  if (s === "selesai")           return "bg-emerald-50 text-emerald-700 border border-emerald-200";
-  if (s === "aktif")             return "bg-orange-50  text-orange-700  border border-orange-200";
+  if (s === "selesai") return "bg-emerald-50 text-emerald-700 border border-emerald-200";
+  if (s === "aktif") return "bg-orange-50  text-orange-700  border border-orange-200";
   if (s === "menunggu_validasi") return "bg-sky-50 text-sky-700 border border-sky-200";
   return "bg-amber-50 text-amber-700 border border-amber-200";
 }
 function statusLabel(s: string) {
-  if (s === "selesai")           return "Selesai";
-  if (s === "aktif")             return "Aktif";
+  if (s === "selesai") return "Selesai";
+  if (s === "aktif") return "Aktif";
   if (s === "menunggu_validasi") return "Menunggu Validasi";
-  if (s === "tertunda")          return "Tertunda";
+  if (s === "tertunda") return "Tertunda";
   return s;
 }
 function progressColor(pct: number) {
@@ -375,7 +375,7 @@ export default function SupervisorDashboard() {
           {/* 2. QUICK ACTIONS */}
           <section>
             <h2 className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: C.muted }}>Aksi Cepat</h2>
-            
+
             {activeProject?.status === "menunggu_validasi" && (
               <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 flex items-start gap-2.5">
                 <AlertCircle size={16} className="text-red-600 mt-0.5 shrink-0" />
@@ -387,10 +387,10 @@ export default function SupervisorDashboard() {
 
             <div className="grid grid-cols-2 gap-4">
               {[
-                { label: "Update Progress",    Icon: RefreshCw, color: "text-orange-600", iconBg: "bg-orange-50",  border: "border-orange-200", href: "/dashboard/supervisor/progress", requiresValidation: true },
-                { label: "Upload Dokumentasi", Icon: Camera,    color: "text-sky-600",    iconBg: "bg-sky-50",     border: "border-sky-200",    href: "/dashboard/supervisor/progress", requiresValidation: true },
-                { label: "Validasi Lokasi GPS",Icon: MapPin,    color: "text-emerald-600",iconBg: "bg-emerald-50", border: "border-emerald-200",href: "/dashboard/supervisor/location", requiresValidation: false },
-                { label: "Lihat Semua Proyek", Icon: FolderOpen,color: "text-violet-600", iconBg: "bg-violet-50",  border: "border-violet-200", href: "/dashboard/supervisor/projects", requiresValidation: false },
+                { label: "Update Progress", Icon: RefreshCw, color: "text-orange-600", iconBg: "bg-orange-50", border: "border-orange-200", href: "/dashboard/supervisor/progress", requiresValidation: true },
+                { label: "Upload Dokumentasi", Icon: Camera, color: "text-sky-600", iconBg: "bg-sky-50", border: "border-sky-200", href: "/dashboard/supervisor/progress", requiresValidation: true },
+                { label: "Validasi Lokasi GPS", Icon: MapPin, color: "text-emerald-600", iconBg: "bg-emerald-50", border: "border-emerald-200", href: "/dashboard/supervisor/location", requiresValidation: false },
+                { label: "Lihat Semua Proyek", Icon: FolderOpen, color: "text-violet-600", iconBg: "bg-violet-50", border: "border-violet-200", href: "/dashboard/supervisor/projects", requiresValidation: false },
               ].map(({ label, Icon, color, iconBg, border, href, requiresValidation }) => {
                 const isDisabled = requiresValidation && activeProject?.status === "menunggu_validasi";
                 return (
