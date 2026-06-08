@@ -6,7 +6,7 @@ import { useRouter, usePathname } from "next/navigation";
 import {
   LayoutGrid, FolderOpen, TrendingUp, Package,
   LogOut, Menu, X, ArrowLeft, MapPin, CalendarClock,
-  Camera, FileText, Bell, Save, ChevronDown,
+  Camera, FileText, Bell, Save, ChevronDown, Search,
 } from "lucide-react";
 import type { Project, ProjectProgress, User } from "@/lib/types/database";
 
@@ -41,6 +41,30 @@ export default function UpdateProgressPage() {
 
   // Form state
   const [selectedProjectId, setSelectedProjectId] = useState<number | "">(""); 
+
+  // Searchable Dropdown States
+  const [projectDropdownOpen, setProjectDropdownOpen] = useState(false);
+  const [projectSearchQuery, setProjectSearchQuery] = useState("");
+
+  const filteredProjects = projects
+    .filter(p => p.status === "aktif")
+    .filter(p =>
+      p.project_name.toLowerCase().includes(projectSearchQuery.toLowerCase()) ||
+      (p.client_name && p.client_name.toLowerCase().includes(projectSearchQuery.toLowerCase()))
+    );
+
+  useEffect(() => {
+    if (!projectDropdownOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest(".project-search-container")) {
+        setProjectDropdownOpen(false);
+      }
+    };
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, [projectDropdownOpen]);
+
   const [pct, setPct] = useState(0);
   const [notes, setNotes] = useState("");
   const [updateDate, setUpdateDate] = useState(new Date().toISOString().split("T")[0]);
@@ -274,26 +298,69 @@ export default function UpdateProgressPage() {
             <section>
               <h2 className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: C.muted }}>Pilih Proyek</h2>
               <div className="rounded-xl border p-4 space-y-3" style={{ background: C.card, borderColor: C.border }}>
-                <div className="relative">
-                  <select
-                    value={selectedProjectId}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setSelectedProjectId(val === "" ? "" : Number(val));
-                      if (val) {
-                        localStorage.setItem("active_project_id", val);
-                      }
+                <div className="relative project-search-container">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setProjectDropdownOpen(!projectDropdownOpen);
+                      setProjectSearchQuery("");
                     }}
-                    className="w-full appearance-none px-3 py-2.5 rounded-lg border text-sm font-medium pr-9 cursor-pointer outline-none focus:border-orange-500"
-                    style={{ borderColor: C.border, background: C.bg, color: C.text }}
-                    required
+                    className="w-full px-4 py-2.5 rounded-xl border text-sm font-medium outline-none text-left flex items-center justify-between bg-white focus:border-orange-500 transition-all"
+                    style={{ borderColor: C.border }}
                   >
-                    <option value="">-- Pilih Proyek --</option>
-                    {projects.filter(p => p.status === "aktif").map(p => (
-                      <option key={p.project_id} value={p.project_id}>{p.project_name}</option>
-                    ))}
-                  </select>
-                  <ChevronDown size={15} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: C.muted }} />
+                    <span className={selectedProject ? "text-slate-900" : "text-slate-400"}>
+                      {selectedProject ? `${selectedProject.project_name} (${selectedProject.client_name || 'Tanpa Klien'})` : "Pilih Proyek"}
+                    </span>
+                    <ChevronDown size={16} className={`text-slate-400 transition-transform duration-200 ${projectDropdownOpen ? "rotate-180" : ""}`} />
+                  </button>
+
+                  {projectDropdownOpen && (
+                    <div
+                      className="absolute z-[110] left-0 right-0 mt-1 bg-white border rounded-xl shadow-xl overflow-hidden flex flex-col max-h-60 animate-in fade-in slide-in-from-top-1 duration-150"
+                      style={{ borderColor: C.border }}
+                    >
+                      <div className="p-2 border-b flex items-center gap-2 bg-slate-50" style={{ borderColor: C.border }}>
+                        <Search size={14} className="text-slate-400 shrink-0" />
+                        <input
+                          type="text"
+                          placeholder="Cari proyek..."
+                          value={projectSearchQuery}
+                          onChange={(e) => setProjectSearchQuery(e.target.value)}
+                          className="w-full bg-transparent text-sm outline-none font-medium text-slate-800"
+                          autoFocus
+                        />
+                        {projectSearchQuery && (
+                          <button type="button" onClick={() => setProjectSearchQuery("")} className="text-slate-400 hover:text-slate-600">
+                            <X size={14} />
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="overflow-y-auto flex-1 divide-y divide-slate-100 max-h-48">
+                        {filteredProjects.length === 0 ? (
+                          <div className="px-4 py-3 text-xs text-slate-400 text-center font-medium">
+                            Proyek tidak ditemukan
+                          </div>
+                        ) : (
+                          filteredProjects.map((p) => (
+                            <button
+                              key={p.project_id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedProjectId(p.project_id);
+                                localStorage.setItem("active_project_id", p.project_id.toString());
+                                setProjectDropdownOpen(false);
+                              }}
+                              className="w-full px-4 py-2.5 text-left text-sm transition-colors hover:bg-orange-50/30 flex flex-col gap-0.5"
+                            >
+                              <span className="font-bold text-slate-800">{p.project_name}</span>
+                              <span className="text-[11px] text-slate-500">Klien: {p.client_name || 'Tanpa Klien'}</span>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {selectedProject && (

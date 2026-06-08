@@ -4,7 +4,8 @@ import Image from "next/image";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import {
-  Package, LayoutGrid, TrendingUp, LogOut, Menu, X, Plus, AlertCircle, CheckCircle2, ClipboardList
+  Package, LayoutGrid, TrendingUp, LogOut, Menu, X, Plus, AlertCircle, CheckCircle2, ClipboardList,
+  Search, ChevronDown
 } from "lucide-react";
 import { SUPERVISOR_NAV, isNavActive } from "@/lib/config/navigation";
 import type { Project, Material, User } from "@/lib/types/database";
@@ -41,6 +42,47 @@ export default function SupervisorMaterialUsagePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // Searchable Dropdown States for Project
+  const [projectDropdownOpen, setProjectDropdownOpen] = useState(false);
+  const [projectSearchQuery, setProjectSearchQuery] = useState("");
+
+  // Searchable Dropdown States for Material
+  const [materialDropdownOpen, setMaterialDropdownOpen] = useState(false);
+  const [materialSearchQuery, setMaterialSearchQuery] = useState("");
+
+  const filteredProjects = projects.filter(p =>
+    p.project_name.toLowerCase().includes(projectSearchQuery.toLowerCase()) ||
+    (p.client_name && p.client_name.toLowerCase().includes(projectSearchQuery.toLowerCase()))
+  );
+
+  const filteredMaterials = materials.filter(m =>
+    m.material_name.toLowerCase().includes(materialSearchQuery.toLowerCase())
+  );
+
+  useEffect(() => {
+    if (!projectDropdownOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest(".project-search-container")) {
+        setProjectDropdownOpen(false);
+      }
+    };
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, [projectDropdownOpen]);
+
+  useEffect(() => {
+    if (!materialDropdownOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest(".material-search-container")) {
+        setMaterialDropdownOpen(false);
+      }
+    };
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, [materialDropdownOpen]);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -140,6 +182,7 @@ export default function SupervisorMaterialUsagePage() {
     ? user.fullname.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()
     : "SP";
 
+  const selectedProject = projects.find(p => p.project_id.toString() === selectedProjectId);
   // Data stok terpilih untuk validasi max input
   const selectedMaterial = materials.find(m => m.material_id.toString() === selectedMaterialId);
 
@@ -257,41 +300,144 @@ export default function SupervisorMaterialUsagePage() {
 
                   <div className="space-y-1">
                     <label className="text-sm font-medium text-slate-700">Pilih Proyek Aktif <span className="text-red-500">*</span></label>
-                    <select
-                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-1 focus:ring-orange-500 outline-none"
-                      value={selectedProjectId}
-                      onChange={(e) => {
-                        setSelectedProjectId(e.target.value);
-                        if (e.target.value) {
-                          localStorage.setItem("lastSelectedProject", e.target.value);
-                        }
-                      }}
-                      required
-                    >
-                      <option value="">-- Pilih Proyek --</option>
-                      {projects.map(p => (
-                        <option key={p.project_id} value={p.project_id}>
-                          {p.project_name} ({p.client_name})
-                        </option>
-                      ))}
-                    </select>
+                    <div className="relative project-search-container">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setProjectDropdownOpen(!projectDropdownOpen);
+                          setProjectSearchQuery("");
+                        }}
+                        className="w-full px-4 py-2.5 rounded-xl border text-sm font-medium outline-none text-left flex items-center justify-between bg-white focus:border-orange-500 transition-all"
+                        style={{ borderColor: C.border }}
+                      >
+                        <span className={selectedProject ? "text-slate-900" : "text-slate-400"}>
+                          {selectedProject ? `${selectedProject.project_name} (${selectedProject.client_name})` : "Pilih Proyek"}
+                        </span>
+                        <ChevronDown size={16} className={`text-slate-400 transition-transform duration-200 ${projectDropdownOpen ? "rotate-180" : ""}`} />
+                      </button>
+
+                      {projectDropdownOpen && (
+                        <div
+                          className="absolute z-[110] left-0 right-0 mt-1 bg-white border rounded-xl shadow-xl overflow-hidden flex flex-col max-h-60 animate-in fade-in slide-in-from-top-1 duration-150"
+                          style={{ borderColor: C.border }}
+                        >
+                          <div className="p-2 border-b flex items-center gap-2 bg-slate-50" style={{ borderColor: C.border }}>
+                            <Search size={14} className="text-slate-400 shrink-0" />
+                            <input
+                              type="text"
+                              placeholder="Cari proyek..."
+                              value={projectSearchQuery}
+                              onChange={(e) => setProjectSearchQuery(e.target.value)}
+                              className="w-full bg-transparent text-sm outline-none font-medium text-slate-800"
+                              autoFocus
+                            />
+                            {projectSearchQuery && (
+                              <button type="button" onClick={() => setProjectSearchQuery("")} className="text-slate-400 hover:text-slate-600">
+                                <X size={14} />
+                              </button>
+                            )}
+                          </div>
+
+                          <div className="overflow-y-auto flex-1 divide-y divide-slate-100 max-h-48">
+                            {filteredProjects.length === 0 ? (
+                              <div className="px-4 py-3 text-xs text-slate-400 text-center font-medium">
+                                Proyek tidak ditemukan
+                              </div>
+                            ) : (
+                              filteredProjects.map((p) => (
+                                <button
+                                  key={p.project_id}
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedProjectId(p.project_id.toString());
+                                    localStorage.setItem("lastSelectedProject", p.project_id.toString());
+                                    localStorage.setItem("active_project_id", p.project_id.toString());
+                                    setProjectDropdownOpen(false);
+                                  }}
+                                  className="w-full px-4 py-2.5 text-left text-sm transition-colors hover:bg-orange-50/30 flex flex-col gap-0.5"
+                                >
+                                  <span className="font-bold text-slate-800">{p.project_name}</span>
+                                  <span className="text-[11px] text-slate-500">Klien: {p.client_name}</span>
+                                </button>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <div className="space-y-1">
                     <label className="text-sm font-medium text-slate-700">Pilih Material <span className="text-red-500">*</span></label>
-                    <select
-                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-1 focus:ring-orange-500 outline-none"
-                      value={selectedMaterialId}
-                      onChange={(e) => setSelectedMaterialId(e.target.value)}
-                      required
-                    >
-                      <option value="">-- Pilih Material --</option>
-                      {materials.map(m => (
-                        <option key={m.material_id} value={m.material_id} disabled={m.current_stock <= 0}>
-                          {m.material_name} - Sisa: {m.current_stock} {m.unit} {m.current_stock <= 0 ? '(Habis)' : ''}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="relative material-search-container">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMaterialDropdownOpen(!materialDropdownOpen);
+                          setMaterialSearchQuery("");
+                        }}
+                        className="w-full px-4 py-2.5 rounded-xl border text-sm font-medium outline-none text-left flex items-center justify-between bg-white focus:border-orange-500 transition-all"
+                        style={{ borderColor: C.border }}
+                      >
+                        <span className={selectedMaterial ? "text-slate-900" : "text-slate-400"}>
+                          {selectedMaterial ? `${selectedMaterial.material_name} (Sisa: ${selectedMaterial.current_stock} ${selectedMaterial.unit})` : "Pilih Material"}
+                        </span>
+                        <ChevronDown size={16} className={`text-slate-400 transition-transform duration-200 ${materialDropdownOpen ? "rotate-180" : ""}`} />
+                      </button>
+
+                      {materialDropdownOpen && (
+                        <div
+                          className="absolute z-[110] left-0 right-0 mt-1 bg-white border rounded-xl shadow-xl overflow-hidden flex flex-col max-h-60 animate-in fade-in slide-in-from-top-1 duration-150"
+                          style={{ borderColor: C.border }}
+                        >
+                          <div className="p-2 border-b flex items-center gap-2 bg-slate-50" style={{ borderColor: C.border }}>
+                            <Search size={14} className="text-slate-400 shrink-0" />
+                            <input
+                              type="text"
+                              placeholder="Cari material..."
+                              value={materialSearchQuery}
+                              onChange={(e) => setMaterialSearchQuery(e.target.value)}
+                              className="w-full bg-transparent text-sm outline-none font-medium text-slate-800"
+                              autoFocus
+                            />
+                            {materialSearchQuery && (
+                              <button type="button" onClick={() => setMaterialSearchQuery("")} className="text-slate-400 hover:text-slate-600">
+                                <X size={14} />
+                              </button>
+                            )}
+                          </div>
+
+                          <div className="overflow-y-auto flex-1 divide-y divide-slate-100 max-h-48">
+                            {filteredMaterials.length === 0 ? (
+                              <div className="px-4 py-3 text-xs text-slate-400 text-center font-medium">
+                                Material tidak ditemukan
+                              </div>
+                            ) : (
+                              filteredMaterials.map((m) => {
+                                const isOutOfStock = m.current_stock <= 0;
+                                return (
+                                  <button
+                                    key={m.material_id}
+                                    type="button"
+                                    disabled={isOutOfStock}
+                                    onClick={() => {
+                                      setSelectedMaterialId(m.material_id.toString());
+                                      setMaterialDropdownOpen(false);
+                                    }}
+                                    className={`w-full px-4 py-2.5 text-left text-sm transition-colors flex items-center justify-between hover:bg-orange-50/30 ${isOutOfStock ? 'opacity-40 cursor-not-allowed bg-slate-50' : ''}`}
+                                  >
+                                    <span>{m.material_name}</span>
+                                    <span className="text-xs font-semibold text-slate-500">
+                                      Stok: {m.current_stock} {m.unit} {isOutOfStock ? '(Habis)' : ''}
+                                    </span>
+                                  </button>
+                                );
+                              })
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <div className="space-y-1">

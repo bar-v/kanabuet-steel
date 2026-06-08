@@ -86,7 +86,7 @@ function SupplierSearchSelect({
         style={{ borderColor }}
       >
         <span className={selectedSupplier ? "text-slate-900" : "text-slate-400"}>
-          {selectedSupplier ? selectedSupplier.supplier_name : "— Pilih Supplier —"}
+          {selectedSupplier ? selectedSupplier.supplier_name : "Pilih Supplier"}
         </span>
         <ChevronDown size={16} className={`text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
       </button>
