@@ -380,6 +380,7 @@ export default function MaterialManagementPage() {
   };
 
   const executeRestock = async (updatePrice: boolean) => {
+    if (!restockMaterial) return;
     setIsSubmitting(true);
     const finalPurchasePrice = restockPurchasePrice === "" ? restockMaterial.unit_price : restockPurchasePrice;
 
