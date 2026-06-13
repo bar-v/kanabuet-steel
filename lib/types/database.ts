@@ -93,6 +93,7 @@ export interface Material {
   unit: string;
   current_stock: number;
   minimum_stock: number;
+  unit_price: number;
   created_at: string;
 }
 
@@ -113,6 +114,8 @@ export interface MaterialUsage {
   quantity: number;
   usage_date: string;
   notes: string | null;
+  unit_price_snapshot: number;
+  total_cost: number;
   created_at: string;
 }
 
@@ -129,6 +132,8 @@ export interface Restock {
   performed_by: number | null;
   quantity: number;
   date: string;
+  purchase_unit_price: number;
+  total_purchase_price: number;
   created_at: string;
 }
 
@@ -181,6 +186,7 @@ export interface CreateMaterialInput {
   unit: string;
   current_stock?: number;
   minimum_stock?: number;
+  unit_price?: number;
 }
 
 export interface CreateRestockInput {
@@ -189,6 +195,8 @@ export interface CreateRestockInput {
   performed_by?: number | null;
   quantity: number;
   date?: string;
+  purchase_unit_price?: number;
+  total_purchase_price?: number;
 }
 
 export interface CreateUserInput {

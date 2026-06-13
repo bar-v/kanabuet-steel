@@ -39,6 +39,10 @@ function getStatusLabel(s: string) {
   }
 }
 
+function formatRupiah(value: number) {
+  return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(value || 0);
+}
+
 const standardUnits = ["batang", "kg", "lembar", "kaleng", "pcs"];
 
 // Component for searchable supplier dropdown
@@ -152,6 +156,101 @@ function SupplierSearchSelect({
   );
 }
 
+function MaterialSearchSelect({
+  materials,
+  value,
+  onChange,
+  borderColor,
+}: {
+  materials: MaterialWithSupplier[];
+  value: number | "";
+  onChange: (value: number | "") => void;
+  borderColor: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const selectedMaterial = materials.find((m) => m.material_id === value);
+
+  const filteredMaterials = materials.filter((m) =>
+    m.material_name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest(".material-search-container")) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, [isOpen]);
+
+  return (
+    <div className="relative material-search-container mt-1">
+      <button
+        type="button"
+        onClick={() => {
+          setIsOpen(!isOpen);
+          setSearchQuery("");
+        }}
+        className="w-full px-4 py-3 rounded-xl border text-sm font-bold outline-none text-left flex items-center justify-between bg-white focus:border-emerald-500 transition-all"
+        style={{ borderColor }}
+      >
+        <span className={selectedMaterial ? "text-slate-900" : "text-slate-400"}>
+          {selectedMaterial ? selectedMaterial.material_name : "Pilih Material..."}
+        </span>
+        <ChevronDown size={16} className={`text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+      </button>
+
+      {isOpen && (
+        <div
+          className="absolute z-[110] left-0 right-0 mt-1 bg-white border rounded-xl shadow-xl overflow-hidden flex flex-col max-h-60 animate-in fade-in slide-in-from-top-1 duration-150"
+          style={{ borderColor }}
+        >
+          <div className="p-2 border-b flex items-center gap-2 bg-slate-50" style={{ borderColor }}>
+            <Search size={14} className="text-slate-400 shrink-0" />
+            <input
+              type="text"
+              placeholder="Cari material..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-transparent text-sm outline-none font-medium text-slate-800"
+              autoFocus
+            />
+          </div>
+
+          <div className="overflow-y-auto flex-1 divide-y divide-slate-100 max-h-48">
+            {filteredMaterials.length === 0 ? (
+              <div className="px-4 py-3 text-xs text-slate-400 text-center font-medium">
+                Material tidak ditemukan
+              </div>
+            ) : (
+              filteredMaterials.map((m) => (
+                <button
+                  key={m.material_id}
+                  type="button"
+                  onClick={() => {
+                    onChange(m.material_id);
+                    setIsOpen(false);
+                  }}
+                  className={`w-full px-4 py-2.5 text-left text-sm transition-colors flex items-center justify-between hover:bg-emerald-50/30
+                    ${m.material_id === value ? "bg-emerald-50/50 font-bold text-emerald-600" : "text-slate-700"}`}
+                >
+                  <span className="truncate pr-4">{m.material_name}</span>
+                  {m.material_id === value && <Check size={14} className="text-emerald-500 shrink-0" />}
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function MaterialManagementPage() {
   const router = useRouter();
   const supabase = createClient();
@@ -175,10 +274,15 @@ export default function MaterialManagementPage() {
   const [formStock, setFormStock] = useState(0);
   const [formMinStock, setFormMinStock] = useState(0);
   const [formSupplierId, setFormSupplierId] = useState<number | "">("");
+  const [formUnitPrice, setFormUnitPrice] = useState(0);
 
   // Restock form
   const [restockQty, setRestockQty] = useState(0);
+  const [restockPurchasePrice, setRestockPurchasePrice] = useState<number | "">("");
+  const [updateLatestPrice, setUpdateLatestPrice] = useState(true);
   const [restockNotes, setRestockNotes] = useState("");
+  const [isQuickRestock, setIsQuickRestock] = useState(false);
+  const [showPriceConfirmation, setShowPriceConfirmation] = useState(false);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -205,7 +309,7 @@ export default function MaterialManagementPage() {
   }, [fetchData]);
 
   const resetForm = () => {
-    setFormName(""); setFormCategory(""); setFormUnit(""); setFormStock(0); setFormMinStock(0); setFormSupplierId("");
+    setFormName(""); setFormCategory(""); setFormUnit(""); setFormStock(0); setFormMinStock(0); setFormSupplierId(""); setFormUnitPrice(0);
     setEditingMaterial(null);
   };
 
@@ -218,12 +322,17 @@ export default function MaterialManagementPage() {
     setFormStock(m.current_stock);
     setFormMinStock(m.minimum_stock);
     setFormSupplierId(m.supplier_id ?? "");
+    setFormUnitPrice(m.unit_price ?? 0);
     setShowAddModal(true);
   };
-  const openRestock = (m: MaterialWithSupplier) => {
+  const openRestock = (m: MaterialWithSupplier | null, isQuick = false) => {
     setRestockMaterial(m);
+    setIsQuickRestock(isQuick);
     setRestockQty(0);
+    setRestockPurchasePrice("");
+    setUpdateLatestPrice(true);
     setRestockNotes("");
+    setShowPriceConfirmation(false);
     setShowRestockModal(true);
   };
 
@@ -238,6 +347,7 @@ export default function MaterialManagementPage() {
         current_stock: formStock,
         minimum_stock: formMinStock,
         supplier_id: formSupplierId || null,
+        unit_price: formUnitPrice,
       };
 
       if (editingMaterial) {
@@ -257,18 +367,42 @@ export default function MaterialManagementPage() {
     }
   };
 
-  const handleRestock = async (e: React.FormEvent) => {
+  const handleRestockInitiate = (e: React.FormEvent) => {
     e.preventDefault();
     if (!restockMaterial || restockQty <= 0) return;
+
+    const isPriceChanged = restockPurchasePrice !== "" && restockPurchasePrice !== restockMaterial.unit_price;
+    if (isPriceChanged) {
+      setShowPriceConfirmation(true);
+    } else {
+      executeRestock(false);
+    }
+  };
+
+  const executeRestock = async (updatePrice: boolean) => {
     setIsSubmitting(true);
+    const finalPurchasePrice = restockPurchasePrice === "" ? restockMaterial.unit_price : restockPurchasePrice;
+
     try {
       const { error } = await supabase.from("restocks").insert([{
         material_id: restockMaterial.material_id,
         supplier_id: restockMaterial.supplier_id,
         quantity: restockQty,
+        purchase_unit_price: finalPurchasePrice,
+        total_purchase_price: finalPurchasePrice * restockQty,
       }]);
       if (error) throw error;
+
+      if (updatePrice) {
+        const { error: updateError } = await supabase
+          .from("materials")
+          .update({ unit_price: finalPurchasePrice })
+          .eq("material_id", restockMaterial.material_id);
+        if (updateError) throw updateError;
+      }
+
       setShowRestockModal(false);
+      setShowPriceConfirmation(false);
       fetchData();
     } catch (err: unknown) {
       alert("Gagal restock: " + (err instanceof Error ? err.message : String(err)));
@@ -317,7 +451,7 @@ export default function MaterialManagementPage() {
             <p className="text-[10px]" style={{ color: C.muted }}>Daftarkan bahan baku baru</p>
           </div>
         </button>
-        <button onClick={() => openRestock(materials[0])}
+        <button onClick={() => openRestock(null, true)}
           disabled={!mounted || materials.length === 0}
           className="group p-4 rounded-xl border flex items-center gap-4 hover:border-emerald-500 hover:shadow-md transition-all duration-200 bg-white disabled:opacity-50"
           style={{ borderColor: C.border }}>
@@ -421,6 +555,9 @@ export default function MaterialManagementPage() {
                           <p className="text-[10px] mt-0.5 font-medium" style={{ color: C.muted }}>
                             {m.category ?? "—"} • {m.suppliers?.supplier_name ?? "Tanpa supplier"}
                           </p>
+                          <p className="text-xs mt-1 font-semibold text-orange-600">
+                            {formatRupiah(m.unit_price)} <span className="font-normal text-slate-500">/ {m.unit}</span>
+                          </p>
                         </td>
                         <td className="px-5 py-4 text-xs font-black" style={{ color: C.text }}>
                           {m.current_stock} <span className="font-medium" style={{ color: C.muted }}>{m.unit}</span>
@@ -432,7 +569,7 @@ export default function MaterialManagementPage() {
                         </td>
                         <td className="px-5 py-4 text-right">
                           <div className="flex items-center justify-end gap-1">
-                            <button onClick={() => openRestock(m)}
+                            <button onClick={() => openRestock(m, false)}
                               className="px-2 py-1 bg-slate-100 hover:bg-orange-500 hover:text-white text-slate-600 text-[10px] font-bold rounded transition-all active:scale-95">
                               Restock
                             </button>
@@ -502,6 +639,14 @@ export default function MaterialManagementPage() {
                 </div>
               </div>
               <div>
+                <label className="text-xs font-bold text-slate-700 ml-1">Harga Satuan</label>
+                <div className="relative mt-1">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">Rp</span>
+                  <input type="number" min="0" value={formUnitPrice} onChange={(e) => setFormUnitPrice(Number(e.target.value))}
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm font-bold outline-none focus:border-orange-500" style={{ borderColor: C.border }} />
+                </div>
+              </div>
+              <div>
                 <label className="text-xs font-bold text-slate-700 ml-1">Supplier</label>
                 <SupplierSearchSelect
                   suppliers={suppliers}
@@ -524,49 +669,142 @@ export default function MaterialManagementPage() {
       )}
 
       {/* ═══════════ RESTOCK MODAL ═══════════ */}
-      {showRestockModal && restockMaterial && (
+      {showRestockModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setShowRestockModal(false)} />
           <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col">
             <div className="px-6 py-4 border-b flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-600"><Archive size={18} /></div>
-                <h2 className="font-bold text-lg">Restock Material</h2>
+                <h2 className="font-bold text-lg">{isQuickRestock ? "Restock Cepat" : "Restock Material"}</h2>
               </div>
               <button onClick={() => setShowRestockModal(false)} className="p-2 hover:bg-slate-100 rounded-full text-slate-400"><X size={20} /></button>
             </div>
-            <form onSubmit={handleRestock} className="p-6 space-y-4">
-              <div className="p-4 rounded-xl bg-slate-50 border" style={{ borderColor: C.border }}>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Material Terpilih</p>
-                <h3 className="font-bold text-base mt-0.5">{restockMaterial.material_name}</h3>
-                <div className="flex gap-6 mt-2">
-                  <div>
-                    <p className="text-[10px] font-bold text-slate-400">Stok Saat Ini</p>
-                    <p className="text-xs font-black text-orange-600">{restockMaterial.current_stock} {restockMaterial.unit}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-slate-400">Minimum</p>
-                    <p className="text-xs font-black text-slate-600">{restockMaterial.minimum_stock} {restockMaterial.unit}</p>
+            {showPriceConfirmation ? (
+              <div className="p-6 space-y-6">
+                <div className="p-4 rounded-xl bg-orange-50 border border-orange-200">
+                  <h3 className="font-bold text-orange-800 mb-4">Konfirmasi Perubahan Harga</h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center pb-2 border-b border-orange-200">
+                      <span className="text-sm font-medium text-orange-700">Harga aktif saat ini:</span>
+                      <span className="text-sm font-bold text-orange-900">{formatRupiah(restockMaterial!.unit_price)}</span>
+                    </div>
+                    <div className="flex justify-between items-center pb-2 border-b border-orange-200">
+                      <span className="text-sm font-medium text-orange-700">Harga beli baru:</span>
+                      <span className="text-sm font-bold text-orange-900">{formatRupiah(restockPurchasePrice as number)}</span>
+                    </div>
+                    <div className="pt-2 text-center">
+                      <p className="text-sm font-bold text-orange-800">Perbarui harga material menjadi {formatRupiah(restockPurchasePrice as number)}?</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div>
-                <label className="text-xs font-bold text-slate-700 ml-1">Jumlah Restock *</label>
-                <div className="relative mt-1">
-                  <input type="number" min="1" value={restockQty || ""} onChange={(e) => setRestockQty(Number(e.target.value))} required
-                    className="w-full pl-4 pr-16 py-3 rounded-xl border text-sm font-bold outline-none focus:border-emerald-500" style={{ borderColor: C.border }} />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 uppercase">{restockMaterial.unit}</span>
+                
+                <div className="flex flex-col gap-3">
+                  <button 
+                    type="button" 
+                    onClick={() => executeRestock(true)}
+                    disabled={isSubmitting}
+                    className="w-full py-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-sm shadow-lg shadow-orange-500/20 transition-all disabled:opacity-60"
+                  >
+                    {isSubmitting ? "Menyimpan..." : "Ya, Perbarui"}
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => executeRestock(false)}
+                    disabled={isSubmitting}
+                    className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-lg shadow-emerald-600/20 transition-all disabled:opacity-60"
+                  >
+                    {isSubmitting ? "Menyimpan..." : "Tidak, Simpan Restock Saja"}
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => setShowPriceConfirmation(false)}
+                    disabled={isSubmitting}
+                    className="w-full py-3 rounded-xl border font-bold text-sm text-slate-600 hover:bg-slate-100 transition-colors" 
+                    style={{ borderColor: C.border }}
+                  >
+                    Batal
+                  </button>
                 </div>
               </div>
-              <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setShowRestockModal(false)}
-                  className="flex-1 py-3 rounded-xl border font-bold text-sm text-slate-600 hover:bg-slate-100 transition-colors" style={{ borderColor: C.border }}>Batal</button>
-                <button type="submit" disabled={isSubmitting}
-                  className="flex-[2] py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-lg shadow-emerald-600/20 transition-all disabled:opacity-60">
-                  {isSubmitting ? "Menyimpan..." : "Simpan Restock"}
-                </button>
-              </div>
-            </form>
+            ) : (
+              <form onSubmit={handleRestockInitiate} className="p-6 space-y-4">
+                {isQuickRestock && (
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 ml-1">Pilih Material *</label>
+                    <MaterialSearchSelect
+                      materials={materials}
+                      value={restockMaterial?.material_id || ""}
+                      onChange={(val) => {
+                        const mat = materials.find(m => m.material_id === val);
+                        setRestockMaterial(mat || null);
+                      }}
+                      borderColor={C.border}
+                    />
+                  </div>
+                )}
+
+                {restockMaterial ? (
+                  <>
+                    <div className="p-4 rounded-xl bg-slate-50 border" style={{ borderColor: C.border }}>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Material Terpilih</p>
+                      <h3 className="font-bold text-base mt-0.5">{restockMaterial.material_name}</h3>
+                      <div className="flex gap-6 mt-2">
+                        <div>
+                          <p className="text-[10px] font-bold text-slate-400">Stok Saat Ini</p>
+                          <p className="text-xs font-black text-orange-600">{restockMaterial.current_stock} {restockMaterial.unit}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-bold text-slate-400">Harga Saat Ini</p>
+                          <p className="text-xs font-black text-slate-600">{formatRupiah(restockMaterial.unit_price)} / {restockMaterial.unit}</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs font-bold text-slate-700 ml-1">Jumlah Restock *</label>
+                        <div className="relative mt-1">
+                          <input type="number" min="1" value={restockQty || ""} onChange={(e) => setRestockQty(Number(e.target.value))} required
+                            className="w-full pl-4 pr-16 py-3 rounded-xl border text-sm font-bold outline-none focus:border-emerald-500" style={{ borderColor: C.border }} />
+                          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400 uppercase">{restockMaterial.unit}</span>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-slate-700 ml-1">Harga Beli per Unit</label>
+                        <div className="relative mt-1">
+                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">Rp</span>
+                          <input type="number" min="0" value={restockPurchasePrice === "" ? "" : restockPurchasePrice} onChange={(e) => setRestockPurchasePrice(e.target.value === "" ? "" : Number(e.target.value))} placeholder={restockMaterial.unit_price.toString()}
+                            className="w-full pl-10 pr-4 py-3 rounded-xl border text-sm font-bold outline-none focus:border-emerald-500 placeholder:font-normal placeholder:text-slate-300" style={{ borderColor: C.border }} />
+                        </div>
+                      </div>
+                    </div>
+
+                    {restockQty > 0 && (
+                      <div className="p-3 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-600">Total Pembelian:</span>
+                        <span className="text-sm font-black text-orange-600">
+                          {formatRupiah(restockQty * (restockPurchasePrice === "" ? restockMaterial.unit_price : restockPurchasePrice))}
+                        </span>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="py-8 text-center">
+                    <Package size={32} className="mx-auto mb-2 text-slate-200" />
+                    <p className="text-sm font-medium text-slate-400">Pilih material terlebih dahulu.</p>
+                  </div>
+                )}
+                
+                <div className="flex gap-3 pt-2">
+                  <button type="button" onClick={() => setShowRestockModal(false)}
+                    className="flex-1 py-3 rounded-xl border font-bold text-sm text-slate-600 hover:bg-slate-100 transition-colors" style={{ borderColor: C.border }}>Batal</button>
+                  <button type="submit" disabled={isSubmitting || !restockMaterial || restockQty <= 0}
+                    className="flex-[2] py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-lg shadow-emerald-600/20 transition-all disabled:opacity-60">
+                    {isSubmitting ? "Menyimpan..." : "Simpan Restock"}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

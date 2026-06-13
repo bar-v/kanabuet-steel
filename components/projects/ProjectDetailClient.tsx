@@ -46,6 +46,10 @@ function formatDate(d: string | null | undefined) {
   return new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
 }
 
+function formatRupiah(value: number) {
+  return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(value || 0);
+}
+
 interface MaterialUsageItem {
   usage_id: number;
   project_id: number;
@@ -53,6 +57,7 @@ interface MaterialUsageItem {
   quantity: number;
   usage_date: string;
   notes: string | null;
+  total_cost: number;
   created_at: string;
   materials: { material_name: string; unit: string } | null;
 }
@@ -431,6 +436,21 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
         {/* TAB: Material */}
         {activeTab === "Material" && (
           <section>
+            {role === "owner" && materialUsage.length > 0 && (
+              <div className="mb-6 rounded-xl border overflow-hidden shadow-sm" style={{ borderColor: C.border }}>
+                <div className="bg-slate-50 p-3 border-b flex items-center gap-2" style={{ borderColor: C.border }}>
+                  <Activity size={14} className="text-orange-500" />
+                  <h2 className="text-xs font-bold uppercase tracking-widest" style={{ color: C.muted }}>Estimasi Pengeluaran Material</h2>
+                </div>
+                <div className="p-5 bg-white flex flex-col items-start">
+                  <p className="text-[11px] font-bold text-slate-500 uppercase mb-1">Total Biaya Material</p>
+                  <p className="text-2xl font-black text-orange-600">
+                    {formatRupiah(materialUsage.reduce((acc, curr) => acc + (curr.total_cost || 0), 0))}
+                  </p>
+                </div>
+              </div>
+            )}
+
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xs font-bold uppercase tracking-widest" style={{ color: C.muted }}>Riwayat Penggunaan Material</h2>
             </div>
@@ -456,6 +476,9 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
                     <div className="text-right shrink-0">
                       <p className="text-sm font-black text-orange-600">-{m.quantity}</p>
                       <p className="text-[10px] font-bold text-slate-400">{m.materials?.unit ?? ""}</p>
+                      {role === "owner" && m.total_cost > 0 && (
+                        <p className="text-[11px] font-bold text-slate-700 mt-1">{formatRupiah(m.total_cost)}</p>
+                      )}
                     </div>
                   </div>
                 ))

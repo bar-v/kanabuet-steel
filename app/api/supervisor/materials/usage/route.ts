@@ -91,6 +91,16 @@ export async function POST(req: Request) {
       );
     }
 
+    // Fetch the current unit price of the material
+    const { data: material } = await supabaseAdmin
+      .from("materials")
+      .select("unit_price")
+      .eq("material_id", parseInt(material_id))
+      .single();
+
+    const unitPrice = material?.unit_price || 0;
+    const totalCost = unitPrice * parseInt(quantity);
+
     // Insert penggunaan material (trigger check_material_stock & reduce_material_stock akan berjalan)
     const { data: usage, error } = await supabaseAdmin
       .from("material_usage")
@@ -98,6 +108,8 @@ export async function POST(req: Request) {
         project_id: parseInt(project_id),
         material_id: parseInt(material_id),
         quantity: parseInt(quantity),
+        unit_price_snapshot: unitPrice,
+        total_cost: totalCost,
         notes: notes?.trim() || null,
       }])
       .select("*, materials:material_id(material_name, unit)")
