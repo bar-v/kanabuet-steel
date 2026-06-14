@@ -383,11 +383,10 @@ export default function SupervisorDashboard() {
 
             <div className="grid grid-cols-2 gap-4">
               {[
-                { label: "Update Progress", Icon: RefreshCw, color: "text-orange-600", iconBg: "bg-orange-50", border: "border-orange-200", href: "/dashboard/supervisor/progress", requiresValidation: true },
-                { label: "Upload Dokumentasi", Icon: Camera, color: "text-sky-600", iconBg: "bg-sky-50", border: "border-sky-200", href: "/dashboard/supervisor/progress", requiresValidation: true },
-                { label: "Validasi Lokasi GPS", Icon: MapPin, color: "text-emerald-600", iconBg: "bg-emerald-50", border: "border-emerald-200", href: "/dashboard/supervisor/location", requiresValidation: false },
-                { label: "Catat Material Keluar", Icon: Package, color: "text-violet-600", iconBg: "bg-violet-50", border: "border-violet-200", href: "/dashboard/supervisor/materials", requiresValidation: true },
-              ].map(({ label, Icon, color, iconBg, border, href, requiresValidation }) => {
+                { label: "Update Progress & Foto", Icon: RefreshCw, color: "text-orange-600", iconBg: "bg-orange-50", border: "border-orange-200", href: "/dashboard/supervisor/progress", requiresValidation: true, colSpan: "col-span-2" },
+                { label: "Validasi Lokasi GPS", Icon: MapPin, color: "text-emerald-600", iconBg: "bg-emerald-50", border: "border-emerald-200", href: "/dashboard/supervisor/location", requiresValidation: false, colSpan: "" },
+                { label: "Catat Material Keluar", Icon: Package, color: "text-violet-600", iconBg: "bg-violet-50", border: "border-violet-200", href: "/dashboard/supervisor/materials", requiresValidation: true, colSpan: "" },
+              ].map(({ label, Icon, color, iconBg, border, href, requiresValidation, colSpan }) => {
                 const isDisabled = requiresValidation && activeProject?.status === "menunggu_validasi";
                 return (
                   <button
@@ -400,7 +399,7 @@ export default function SupervisorDashboard() {
                         router.push(href);
                       }
                     }}
-                    className={`flex flex-col items-center gap-2.5 p-4 rounded-xl border transition-all duration-150 
+                    className={`flex flex-col items-center gap-2.5 p-4 rounded-xl border transition-all duration-150 ${colSpan} 
                       ${isDisabled ? "opacity-50 cursor-not-allowed grayscale bg-slate-50" : `hover:shadow-lg active:scale-95 ${border}`}
                     `}
                     style={isDisabled ? undefined : { background: C.card }}

@@ -74,7 +74,7 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
   const router = useRouter();
 
   const [activeTab, setActiveTab] = useState<Tab>("Overview");
-  
+
   // Data state
   const [project, setProject] = useState<Project | null>(null);
   const [latestProgress, setLatestProgress] = useState(0);
@@ -86,6 +86,7 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
   const [isLoading, setIsLoading] = useState(true);
 
   // Modal State
+  const [showDocsModal, setShowDocsModal] = useState(false);
   const [showMaterialModal, setShowMaterialModal] = useState(false);
   const [selectedMaterialId, setSelectedMaterialId] = useState("");
   const [usageQuantity, setUsageQuantity] = useState("");
@@ -206,6 +207,13 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
   const selectedMaterial = materials.find(m => m.material_id.toString() === selectedMaterialId);
   const isCritical = selectedMaterial ? selectedMaterial.current_stock <= selectedMaterial.minimum_stock : false;
 
+  const groupedPhotos = photos.reduce((acc, photo) => {
+    const date = formatDate(photo.update_date);
+    if (!acc[date]) acc[date] = [];
+    acc[date].push(photo);
+    return acc;
+  }, {} as Record<string, any[]>);
+
   return (
     <div className="space-y-5 pb-24 relative">
       {/* 1. Header / Project Info Card */}
@@ -244,9 +252,9 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
                 <p className="text-[10px] font-medium" style={{ color: C.muted }}>Lokasi</p>
                 <p className="text-xs font-semibold leading-snug" style={{ color: C.text }}>{project.project_address}</p>
                 {project.latitude && project.longitude && (
-                  <a 
-                    href={`https://www.google.com/maps?q=${project.latitude},${project.longitude}`} 
-                    target="_blank" 
+                  <a
+                    href={`https://www.google.com/maps?q=${project.latitude},${project.longitude}`}
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 mt-1.5 text-[10px] font-bold text-sky-500 hover:text-sky-600 hover:underline transition-colors"
                   >
@@ -322,7 +330,7 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
               <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: C.border }}>
                 <h2 className="text-xs font-bold uppercase tracking-widest" style={{ color: C.muted }}>Aktivitas Terbaru</h2>
                 <button className="flex items-center gap-1 text-xs text-orange-500 hover:text-orange-600 font-bold" onClick={() => setActiveTab("Progress")}>
-                  Semua <ChevronRight size={13} />
+                  Lihat Semua <ChevronRight size={13} />
                 </button>
               </div>
               <div className="divide-y" style={{ borderColor: C.border }}>
@@ -354,7 +362,7 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
             <section className="rounded-xl border bg-white overflow-hidden" style={{ borderColor: C.border }}>
               <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: C.border }}>
                 <h2 className="text-xs font-bold uppercase tracking-widest" style={{ color: C.muted }}>Preview Dokumentasi</h2>
-                <button className="flex items-center gap-1 text-xs text-orange-500 hover:text-orange-600 font-bold" onClick={() => setActiveTab("Progress")}>
+                <button className="flex items-center gap-1 text-xs text-orange-500 hover:text-orange-600 font-bold" onClick={() => setShowDocsModal(true)}>
                   Lihat Semua <ChevronRight size={13} />
                 </button>
               </div>
@@ -388,7 +396,10 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
               <h2 className="text-xs font-bold uppercase tracking-widest" style={{ color: C.muted }}>Histori Progress & Dokumentasi</h2>
               {role === "supervisor" && (
                 <button
-                  onClick={() => router.push(`/dashboard/supervisor/projects/${projectId}/progress/new`)} // Adjust route if needed
+                  onClick={() => {
+                    localStorage.setItem("active_project_id", projectId.toString());
+                    router.push(`/dashboard/supervisor/progress`);
+                  }}
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-xs font-bold transition-all"
                 >
                   <Plus size={13} /> Tambah Progress
@@ -402,32 +413,43 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
                   <p className="text-sm font-medium" style={{ color: C.muted }}>Belum ada update progress.</p>
                 </div>
               ) : (
-                progressHistory.map((p) => (
-                  <div key={p.progress_id} className="rounded-xl border bg-white overflow-hidden" style={{ borderColor: C.border }}>
-                    <div className="p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xl font-black text-orange-500">{p.percentage}%</span>
-                        <span className="text-[10px] font-medium bg-slate-100 px-2 py-1 rounded-md" style={{ color: C.subtext }}>{formatDate(p.update_date)}</span>
-                      </div>
-                      <div className="h-2 rounded-full overflow-hidden mb-3" style={{ background: C.border }}>
-                        <div className={`h-full rounded-full transition-all duration-500 ${progressColor(p.percentage)}`} style={{ width: `${p.percentage}%` }} />
-                      </div>
-                      {p.notes && <p className="text-sm font-medium" style={{ color: C.subtext }}>{p.notes}</p>}
-                      {p.users?.fullname && <p className="text-[10px] mt-2 font-medium" style={{ color: C.muted }}>Dicatat oleh: {p.users.fullname}</p>}
-                    </div>
-                    {p.photo_url && (
-                      <div className="border-t p-3 bg-slate-50 flex items-start gap-3" style={{ borderColor: C.border }}>
-                        <img src={p.photo_url} alt="Dokumentasi" className="w-16 h-16 rounded-lg object-cover border" style={{ borderColor: C.border }} />
-                        <div className="flex-1">
-                          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Dokumentasi</p>
-                          <a href={p.photo_url} target="_blank" rel="noreferrer" className="text-xs font-bold text-sky-600 hover:underline">
-                            Lihat Foto Penuh
-                          </a>
+                progressHistory.map((p, index, arr) => {
+                  const prev = arr[index + 1];
+                  const isJustDocs = prev && p.percentage === prev.percentage;
+
+                  return (
+                    <div key={p.progress_id} className="rounded-xl border bg-white overflow-hidden" style={{ borderColor: C.border }}>
+                      <div className="p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          {isJustDocs ? (
+                            <span className="text-sm font-black text-sky-500 flex items-center gap-1.5"><ImageIcon size={16} /> Dokumentasi Tambahan</span>
+                          ) : (
+                            <span className="text-xl font-black text-orange-500">{p.percentage}%</span>
+                          )}
+                          <span className="text-[10px] font-medium bg-slate-100 px-2 py-1 rounded-md" style={{ color: C.subtext }}>{formatDate(p.update_date)}</span>
                         </div>
+                        {!isJustDocs && (
+                          <div className="h-2 rounded-full overflow-hidden mb-3" style={{ background: C.border }}>
+                            <div className={`h-full rounded-full transition-all duration-500 ${progressColor(p.percentage)}`} style={{ width: `${p.percentage}%` }} />
+                          </div>
+                        )}
+                        {p.notes && <p className="text-sm font-medium mt-1" style={{ color: C.subtext }}>{p.notes}</p>}
+                        {p.users?.fullname && <p className="text-[10px] mt-2 font-medium" style={{ color: C.muted }}>Dicatat oleh: {p.users.fullname}</p>}
                       </div>
-                    )}
-                  </div>
-                ))
+                      {p.photo_url && (
+                        <div className="border-t p-3 bg-slate-50 flex items-start gap-3" style={{ borderColor: C.border }}>
+                          <img src={p.photo_url} alt="Dokumentasi" className="w-16 h-16 rounded-lg object-cover border" style={{ borderColor: C.border }} />
+                          <div className="flex-1">
+                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Dokumentasi</p>
+                            <a href={p.photo_url} target="_blank" rel="noreferrer" className="text-xs font-bold text-sky-600 hover:underline">
+                              Lihat Foto Penuh
+                            </a>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
               )}
             </div>
           </section>
@@ -657,6 +679,63 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
               >
                 {isSubmittingUsage ? "Menyimpan..." : "Simpan Data"}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════ MODAL DOKUMENTASI FOTO ═══════════ */}
+      {showDocsModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
+          <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm" onClick={() => setShowDocsModal(false)} />
+          <div className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-300">
+            {/* Header */}
+            <div className="px-5 py-4 border-b flex items-center justify-between bg-white rounded-t-2xl sticky top-0 z-10" style={{ borderColor: C.border }}>
+              <div>
+                <h2 className="font-bold text-base text-slate-900">Galeri Dokumentasi</h2>
+                <p className="text-[10px] font-medium text-slate-500">{project?.project_name}</p>
+              </div>
+              <button onClick={() => setShowDocsModal(false)} className="p-2 hover:bg-slate-100 bg-slate-50 rounded-full transition-colors text-slate-500">
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-8 bg-slate-50 rounded-b-2xl">
+              {Object.keys(groupedPhotos).length === 0 ? (
+                <div className="text-center py-12">
+                  <ImageIcon size={32} className="mx-auto mb-3 opacity-30 text-slate-500" />
+                  <p className="text-sm font-medium text-slate-500">Belum ada dokumentasi untuk proyek ini.</p>
+                </div>
+              ) : (
+                Object.entries(groupedPhotos).map(([date, photosInDate]) => (
+                  <div key={date} className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="h-px flex-1 bg-slate-200" />
+                      <span className="text-xs font-bold uppercase tracking-widest text-slate-500">{date}</span>
+                      <div className="h-px flex-1 bg-slate-200" />
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                      {photosInDate.map((photo) => (
+                        <div key={photo.progress_id} className="group relative rounded-xl overflow-hidden shadow-sm border border-slate-200 bg-white aspect-square">
+                          <img src={photo.photo_url} alt="Dokumentasi" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
+                            <span className="text-xs font-black text-white">{photo.percentage}% Progress</span>
+                            {photo.notes && <p className="text-[10px] text-slate-200 line-clamp-2 mt-1 leading-snug">{photo.notes}</p>}
+                            <a href={photo.photo_url} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-[10px] font-bold text-sky-400 hover:text-sky-300">
+                              Buka Penuh <ChevronRight size={10} />
+                            </a>
+                          </div>
+                          {/* Always visible percentage badge */}
+                          <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-2 py-1 rounded-md">
+                            <span className="text-[10px] font-bold text-white">{photo.percentage}%</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>

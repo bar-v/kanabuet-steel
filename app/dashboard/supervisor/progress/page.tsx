@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import imageCompression from "browser-image-compression";
 import {
   LayoutGrid, FolderOpen, TrendingUp, Package,
   LogOut, Menu, X, ArrowLeft, MapPin, CalendarClock,
@@ -112,11 +113,36 @@ export default function UpdateProgressPage() {
     }
   }, [projects, selectedProjectId]);
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [isCompressing, setIsCompressing] = useState(false);
+
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setPhotoFile(file);
+
+    // Set preview immediately (optional, or wait for compression)
     setPhotoPreview(URL.createObjectURL(file));
+
+    setIsCompressing(true);
+    try {
+      const options = {
+        maxSizeMB: 1,
+        maxWidthOrHeight: 1920,
+        useWebWorker: true,
+      };
+      
+      const compressedFile = await imageCompression(file, options);
+      // Create a new File object from the Blob returned by imageCompression to retain the original filename
+      const finalFile = new File([compressedFile], file.name, { type: compressedFile.type });
+      
+      setPhotoFile(finalFile);
+      setPhotoPreview(URL.createObjectURL(finalFile));
+    } catch (error) {
+      console.error("Gagal mengompres gambar:", error);
+      // Fallback ke file original jika kompresi gagal
+      setPhotoFile(file);
+    } finally {
+      setIsCompressing(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -143,7 +169,8 @@ export default function UpdateProgressPage() {
           const { url } = await uploadRes.json();
           photoUrl = url;
         } else {
-          console.warn("Upload foto gagal");
+          const errData = await uploadRes.json().catch(() => ({ error: "Unknown error" }));
+          throw new Error(`Upload foto gagal: ${errData.error || uploadRes.statusText}`);
         }
       }
 
@@ -491,7 +518,7 @@ export default function UpdateProgressPage() {
             <section className="space-y-3 pb-2">
               <button
                 type="submit"
-                disabled={isSubmitting || !selectedProjectId}
+                disabled={isSubmitting || !selectedProjectId || isCompressing}
                 className="w-full py-3.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-sm transition-all duration-150 active:scale-[0.98] shadow-[0_4px_14px_rgba(249,115,22,0.3)] flex items-center justify-center gap-2 disabled:opacity-60"
               >
                 {isSubmitting ? (

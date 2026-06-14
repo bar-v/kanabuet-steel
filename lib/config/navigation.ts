@@ -22,7 +22,7 @@ export const OWNER_NAV: NavItem[] = [
   { label: "Proyek", Icon: FolderOpen, href: "/dashboard/projects", matchPatterns: ["/dashboard/projects"] },
   { label: "Material", Icon: Package, href: "/dashboard/materials", matchPatterns: ["/dashboard/materials"] },
   { label: "Supplier", Icon: ShoppingCart, href: "/dashboard/suppliers", matchPatterns: ["/dashboard/suppliers"] },
-  { label: "Evaluasi", Icon: BarChart3, href: "/dashboard/evaluation", matchPatterns: ["/dashboard/evaluation"] },
+
   { label: "Pengguna", Icon: Users, href: "/dashboard/users", matchPatterns: ["/dashboard/users"] },
 ];
 
