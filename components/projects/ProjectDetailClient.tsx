@@ -716,7 +716,7 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
                       <div className="h-px flex-1 bg-slate-200" />
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                      {photosInDate.map((photo) => (
+                      {(photosInDate as any[]).map((photo) => (
                         <div key={photo.progress_id} className="group relative rounded-xl overflow-hidden shadow-sm border border-slate-200 bg-white aspect-square">
                           <img src={photo.photo_url} alt="Dokumentasi" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                           <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
