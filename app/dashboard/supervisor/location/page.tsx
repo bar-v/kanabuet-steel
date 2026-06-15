@@ -8,10 +8,11 @@ import {
   MapPin, Navigation, Camera, CheckCircle2, AlertCircle, FileText, Upload,
   Map as MapIcon, Loader2, ChevronDown, UserCircle2, CalendarClock,
 } from "lucide-react";
-import { SUPERVISOR_NAV, isNavActive } from "@/lib/config/navigation";
-import type { Project, User } from "@/lib/types/database";
+import DashboardShell from "@/components/layout/DashboardShell";
+import type { Project } from "@/lib/types/database";
+import useSWR, { mutate } from "swr";
+import { fetcher } from "@/lib/utils/fetcher";
 import dynamic from 'next/dynamic';
-import { useLogout } from "@/lib/auth/client";
 
 const MapPicker = dynamic(() => import('@/components/MapPicker'), {
   ssr: false,
@@ -37,15 +38,14 @@ const C = {
 
 export default function LocationValidationPage() {
   const router = useRouter();
-  const pathname = usePathname();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Data state
-  const [user, setUser] = useState<User | null>(null);
-  const [pendingProjects, setPendingProjects] = useState<Project[]>([]);
+  // SWR data fetching
+  const { data: projectsData, isLoading: projectsLoading } = useSWR('/api/supervisor/projects', fetcher);
+  const pendingProjects = (projectsData?.projects as Project[])?.filter(p => p.status === "menunggu_validasi") || [];
+  const isLoading = projectsLoading;
+
   const [selectedProjectId, setSelectedProjectId] = useState<string>("");
-  const [isLoading, setIsLoading] = useState(true);
 
   // Searchable Dropdown States
   const [projectDropdownOpen, setProjectDropdownOpen] = useState(false);
@@ -79,27 +79,7 @@ export default function LocationValidationPage() {
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  const fetchData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const resUser = await fetch('/api/auth/me');
-      const { user } = await resUser.json();
-      if (user) setUser(user as User);
 
-      // Ambil proyek yang ditugaskan — filter menunggu_validasi
-      const resProjects = await fetch('/api/supervisor/projects');
-      const { projects } = await resProjects.json();
-      if (projects) {
-        setPendingProjects(
-          (projects as Project[]).filter(p => p.status === "menunggu_validasi")
-        );
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { fetchData(); }, [fetchData]);
 
   // Restore active project from localStorage
   useEffect(() => {
@@ -229,6 +209,8 @@ export default function LocationValidationPage() {
       setUploadStatus(null);
       setIsSuccess(true);
 
+      mutate('/api/supervisor/projects');
+
       // Redirect setelah sukses
       setTimeout(() => {
         router.push('/dashboard/supervisor');
@@ -242,85 +224,8 @@ export default function LocationValidationPage() {
 
   const isFormComplete = locationData && surveyNotes.length > 5 && selectedProjectId;
 
-  const handleLogout = useLogout();
-
-  const initials = user?.fullname
-    ? user.fullname.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()
-    : "SV";
-
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: C.bg, color: C.text }}>
-
-      {/* Mobile backdrop */}
-      {sidebarOpen && (
-        <div className="fixed inset-0 z-30 bg-black/70 backdrop-blur-sm lg:hidden" onClick={() => setSidebarOpen(false)} />
-      )}
-
-      {/* ═══════════ SIDEBAR ═══════════ */}
-      <aside
-        className={`fixed top-0 left-0 z-40 h-full w-64 flex flex-col border-r transition-transform duration-300 ease-in-out
-          ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
-          lg:translate-x-0 lg:static lg:z-auto`}
-        style={{ background: C.sidebar, borderColor: C.border }}
-      >
-        <div className="flex items-center gap-3 px-5 py-5 border-b" style={{ borderColor: C.border }}>
-          <Image src="/images/logo.png" alt="logo" width={36} height={36} className="object-contain drop-shadow-[0_0_8px_rgba(249,115,22,0.4)]" />
-          <div className="flex-1 min-w-0">
-            <p className="text-orange-500 font-black text-sm tracking-wider leading-none truncate">KANABUET STEEL</p>
-            <p className="text-[10px] tracking-wide mt-0.5 font-medium" style={{ color: C.subtext }}>Fabrication Management</p>
-          </div>
-          <button onClick={() => setSidebarOpen(false)} className="lg:hidden hover:text-slate-900 transition-colors" style={{ color: C.muted }}>
-            <X size={18} />
-          </button>
-        </div>
-
-        <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
-          {SUPERVISOR_NAV.map(({ label, Icon, href, matchPatterns }) => {
-            const active = isNavActive(pathname, href, matchPatterns);
-            return (
-              <button key={label} onClick={() => { setSidebarOpen(false); router.push(href); }}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition-all duration-150
-                  ${active ? "bg-orange-500/15 text-orange-400 border border-orange-500/25" : "hover:bg-slate-100 hover:text-slate-900"}`}
-                style={!active ? { color: C.subtext } : undefined}>
-                <Icon size={17} style={!active ? { color: C.muted } : undefined} className={active ? "text-orange-400" : ""} />
-                {label}
-              </button>
-            );
-          })}
-        </nav>
-
-        <div className="border-t p-4" style={{ borderColor: C.border }}>
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-9 h-9 rounded-full bg-orange-500/20 border border-orange-500/30 flex items-center justify-center text-orange-400 font-bold text-sm">{initials}</div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold truncate" style={{ color: C.text }}>{user?.fullname ?? "Memuat..."}</p>
-              <p className="text-[11px] font-medium" style={{ color: C.muted }}>Supervisor</p>
-            </div>
-          </div>
-          <button onClick={handleLogout} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50 transition-colors font-medium">
-            <LogOut size={15} /> Logout
-          </button>
-        </div>
-      </aside>
-
-      {/* ═══════════ MAIN AREA ═══════════ */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-
-        {/* HEADER */}
-        <header className="sticky top-0 z-20 flex items-center gap-3 px-4 sm:px-5 backdrop-blur border-b" style={{ height: 60, background: `${C.header}E6`, borderColor: C.border }}>
-          <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 -ml-2 rounded-lg hover:bg-slate-100 transition-colors" style={{ color: C.muted }}>
-            <Menu size={20} />
-          </button>
-          <button onClick={() => router.push('/dashboard/supervisor')} className="p-2 -ml-2 sm:ml-0 rounded-lg hover:bg-slate-100 transition-colors flex items-center gap-1.5 text-sm font-medium" style={{ color: C.subtext }}>
-            <ArrowLeft size={16} /> <span className="hidden sm:block">Kembali</span>
-          </button>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-sm font-bold truncate" style={{ color: C.text }}>Validasi Lapangan</h1>
-          </div>
-        </header>
-
-        {/* CONTENT */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-5 lg:p-8 space-y-6">
+    <DashboardShell role="supervisor" title="Validasi Lapangan" backUrl="/dashboard/supervisor">
 
           {/* Success Overlay */}
           {isSuccess && (
@@ -614,10 +519,10 @@ export default function LocationValidationPage() {
           )}
 
           <div className="h-24" /> {/* Bottom Spacer */}
-        </main>
+
 
         {/* BOTTOM ACTION BAR */}
-        <div className={`absolute bottom-0 left-0 right-0 p-4 sm:p-5 bg-white border-t transition-all duration-500 transform ${locationData && selectedProjectId ? "translate-y-0 shadow-[0_-10px_30px_rgba(0,0,0,0.05)]" : "translate-y-full"}`} style={{ borderColor: C.border }}>
+        <div className={`fixed bottom-0 left-0 lg:left-64 right-0 z-30 p-4 sm:p-5 bg-white border-t transition-all duration-500 transform ${locationData && selectedProjectId ? "translate-y-0 shadow-[0_-10px_30px_rgba(0,0,0,0.05)]" : "translate-y-full"}`} style={{ borderColor: C.border }}>
           <div className="max-w-2xl mx-auto flex flex-col items-center gap-2 text-center">
             <button
               onClick={handleSubmitValidation}
@@ -633,7 +538,6 @@ export default function LocationValidationPage() {
           </div>
         </div>
 
-      </div>
-    </div>
+    </DashboardShell>
   );
 }

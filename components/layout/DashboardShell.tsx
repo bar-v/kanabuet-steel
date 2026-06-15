@@ -3,8 +3,8 @@
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { LogOut, Menu, X, Bell } from "lucide-react";
-import { OWNER_NAV, isNavActive } from "@/lib/config/navigation";
+import { LogOut, Menu, X, Bell, ArrowLeft } from "lucide-react";
+import { OWNER_NAV, SUPERVISOR_NAV, isNavActive } from "@/lib/config/navigation";
 import type { User } from "@/lib/types/database";
 import { useLogout } from "@/lib/auth/client";
 
@@ -20,6 +20,8 @@ interface DashboardShellProps {
   title: string;
   subtitle?: string;
   headerActions?: React.ReactNode;
+  role?: "owner" | "supervisor";
+  backUrl?: string;
 }
 
 export default function DashboardShell({
@@ -27,6 +29,8 @@ export default function DashboardShell({
   title,
   subtitle,
   headerActions,
+  role = "owner",
+  backUrl,
 }: DashboardShellProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -44,7 +48,9 @@ export default function DashboardShell({
 
   const initials = user?.fullname
     ? user.fullname.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()
-    : "OW";
+    : role === "supervisor" ? "SV" : "OW";
+
+  const navItems = role === "supervisor" ? SUPERVISOR_NAV : OWNER_NAV;
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: C.bg, color: C.text }}>
@@ -92,7 +98,7 @@ export default function DashboardShell({
         </div>
 
         <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
-          {OWNER_NAV.map(({ label, Icon, href, matchPatterns }) => {
+          {navItems.map(({ label, Icon, href, matchPatterns }) => {
             const active = isNavActive(pathname, href, matchPatterns);
             return (
               <button
@@ -129,8 +135,8 @@ export default function DashboardShell({
               <p className="text-sm font-bold truncate" style={{ color: C.text }}>
                 {user?.fullname ?? "Memuat..."}
               </p>
-              <p className="text-[11px] font-medium" style={{ color: C.muted }}>
-                Owner
+              <p className="text-[11px] font-medium capitalize" style={{ color: C.muted }}>
+                {role}
               </p>
             </div>
           </div>
@@ -157,6 +163,16 @@ export default function DashboardShell({
           >
             <Menu size={20} />
           </button>
+          {backUrl && (
+            <button
+              onClick={() => router.push(backUrl)}
+              className="p-2 -ml-2 sm:ml-0 rounded-lg hover:bg-slate-100 transition-colors flex items-center gap-1.5 text-sm font-medium"
+              style={{ color: C.subtext }}
+            >
+              <ArrowLeft size={16} />
+              <span className="hidden sm:block">Kembali</span>
+            </button>
+          )}
           <div className="flex-1 min-w-0">
             <h1 className="text-base font-bold truncate" style={{ color: C.text }}>
               {title}

@@ -8,6 +8,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import type { Supplier } from "@/lib/types/database";
 import DashboardShell from "@/components/layout/DashboardShell";
+import useSWR, { mutate } from "swr";
 
 const C = {
   bg: "#F8FAFC", card: "#FFFFFF", border: "#E2E8F0",
@@ -17,8 +18,6 @@ const C = {
 
 export default function SupplierManagementPage() {
   const supabase = createClient();
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
   // Modal
@@ -31,17 +30,14 @@ export default function SupplierManagementPage() {
   const [formPhone, setFormPhone] = useState("");
   const [formAddress, setFormAddress] = useState("");
 
-  const fetchSuppliers = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const { data } = await supabase.from("suppliers").select("*").order("supplier_name");
-      if (data) setSuppliers(data as Supplier[]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [supabase]);
+  const fetchSuppliersData = async () => {
+    const supabase = createClient();
+    const { data } = await supabase.from("suppliers").select("*").order("supplier_name");
+    return (data || []) as Supplier[];
+  };
 
-  useEffect(() => { fetchSuppliers(); }, [fetchSuppliers]);
+  const { data: suppliersData, isLoading } = useSWR('admin_suppliers', fetchSuppliersData);
+  const suppliers = suppliersData || [];
 
   const resetForm = () => { setFormName(""); setFormPhone(""); setFormAddress(""); setEditingSupplier(null); };
 
@@ -72,7 +68,7 @@ export default function SupplierManagementPage() {
       }
       setShowModal(false);
       resetForm();
-      fetchSuppliers();
+      mutate('admin_suppliers');
     } catch (err: unknown) {
       alert("Gagal menyimpan: " + (err instanceof Error ? err.message : String(err)));
     } finally {
@@ -84,7 +80,7 @@ export default function SupplierManagementPage() {
     if (!confirm(`Hapus supplier "${s.supplier_name}"?`)) return;
     const { error } = await supabase.from("suppliers").delete().eq("supplier_id", s.supplier_id);
     if (error) { alert("Gagal menghapus: " + error.message); return; }
-    setSuppliers((prev) => prev.filter((x) => x.supplier_id !== s.supplier_id));
+    mutate('admin_suppliers');
   };
 
   const filtered = suppliers.filter((s) =>

@@ -7,6 +7,7 @@ import { ArrowLeft, Save, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Project, ProjectStatus, User } from "@/lib/types/database";
 import DashboardShell from "@/components/layout/DashboardShell";
+import useSWR, { mutate } from "swr";
 
 const DynamicMapPicker = dynamic(() => import("@/components/MapPicker"), {
   ssr: false,
@@ -32,7 +33,6 @@ export default function EditProjectPage({ params }: Props) {
   const supabase = createClient();
 
   const [projectId, setProjectId] = useState<number | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [supervisors, setSupervisors] = useState<User[]>([]);
 
@@ -116,41 +116,39 @@ type GpsState =
 
   useEffect(() => { params.then(({ id }) => setProjectId(Number(id))); }, [params]);
 
-  const fetchProject = useCallback(async () => {
-    if (!projectId) return;
-    setIsLoading(true);
-    try {
-      const { data: p } = await supabase.from("projects").select("*").eq("project_id", projectId).single();
-      if (p) {
-        const proj = p as Project;
-        setProjectName(proj.project_name);
-        setClientName(proj.client_name);
-        setClientPhone(proj.client_phone ?? "");
-        setDescription(proj.description ?? "");
-        setProjectAddress(proj.project_address);
-        setStartDate(proj.start_date ?? "");
-        setEndDate(proj.estimated_finish ?? "");
-        setStatus(proj.status);
-        if (proj.supervisor_id) setSupervisorId(proj.supervisor_id.toString());
-        if (proj.latitude && proj.longitude) {
-          setPosition({ lat: proj.latitude, lng: proj.longitude });
-        }
+  const fetchProjectData = async () => {
+    if (!projectId) return null;
+    const supabase = createClient();
+    const [{ data: p }, { data: users }] = await Promise.all([
+      supabase.from("projects").select("*").eq("project_id", projectId).single(),
+      supabase.from("users").select("*").eq("system_role", "supervisor").eq("is_active", true).order("fullname")
+    ]);
+    return {
+      project: p as Project | null,
+      supervisors: (users || []) as User[]
+    };
+  };
+
+  const { data, isLoading } = useSWR(projectId ? `admin_project_edit_${projectId}` : null, fetchProjectData, { revalidateOnFocus: false });
+
+  useEffect(() => {
+    if (data?.project) {
+      const proj = data.project;
+      setProjectName(proj.project_name);
+      setClientName(proj.client_name);
+      setClientPhone(proj.client_phone ?? "");
+      setDescription(proj.description ?? "");
+      setProjectAddress(proj.project_address);
+      setStartDate(proj.start_date ?? "");
+      setEndDate(proj.estimated_finish ?? "");
+      setStatus(proj.status);
+      if (proj.supervisor_id) setSupervisorId(proj.supervisor_id.toString());
+      if (proj.latitude && proj.longitude) {
+        setPosition({ lat: proj.latitude, lng: proj.longitude });
       }
-
-      // Fetch supervisors for dropdown
-      const { data: users } = await supabase
-        .from("users")
-        .select("*")
-        .eq("system_role", "supervisor")
-        .eq("is_active", true)
-        .order("fullname");
-      if (users) setSupervisors(users as User[]);
-    } finally {
-      setIsLoading(false);
+      setSupervisors(data.supervisors);
     }
-  }, [projectId, supabase]);
-
-  useEffect(() => { fetchProject(); }, [fetchProject]);
+  }, [data]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -175,6 +173,9 @@ type GpsState =
         .eq("project_id", projectId);
 
       if (error) throw error;
+      mutate('admin_projects');
+      mutate('admin_dashboard_data');
+      mutate(`admin_project_edit_${projectId}`);
       router.push(`/dashboard/projects/${projectId}`);
       router.refresh();
     } catch (err: unknown) {

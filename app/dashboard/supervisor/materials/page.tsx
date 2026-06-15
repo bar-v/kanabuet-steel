@@ -7,9 +7,10 @@ import {
   Package, LayoutGrid, TrendingUp, LogOut, Menu, X, Plus, AlertCircle, CheckCircle2, ClipboardList,
   Search, ChevronDown
 } from "lucide-react";
-import { SUPERVISOR_NAV, isNavActive } from "@/lib/config/navigation";
-import type { Project, Material, User } from "@/lib/types/database";
-import { useLogout } from "@/lib/auth/client";
+import DashboardShell from "@/components/layout/DashboardShell";
+import type { Project, Material } from "@/lib/types/database";
+import useSWR, { mutate } from "swr";
+import { fetcher } from "@/lib/utils/fetcher";
 
 const C = {
   bg: "#F8FAFC", card: "#FFFFFF", border: "#E2E8F0",
@@ -27,13 +28,14 @@ function IconLoader() {
 
 export default function SupervisorMaterialUsagePage() {
   const router = useRouter();
-  const pathname = usePathname();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
 
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [materials, setMaterials] = useState<Material[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // SWR data fetching
+  const { data: projectsData, isLoading: projectsLoading } = useSWR('/api/supervisor/projects', fetcher);
+  const { data: materialsData, isLoading: materialsLoading } = useSWR('/api/supervisor/materials', fetcher);
+
+  const projects = (projectsData?.projects as Project[])?.filter(p => p.status === "aktif") || [];
+  const materials = (materialsData?.materials as Material[]) || [];
+  const isLoading = projectsLoading || materialsLoading;
 
   // Form State
   const [selectedProjectId, setSelectedProjectId] = useState<string>("");
@@ -85,38 +87,7 @@ export default function SupervisorMaterialUsagePage() {
     return () => document.removeEventListener("click", handleClickOutside);
   }, [materialDropdownOpen]);
 
-  const fetchData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const resUser = await fetch('/api/auth/me');
-      const { user } = await resUser.json();
-      if (user) {
-        setUser(user as User);
-      }
 
-      // Ambil proyek aktif yang ditugaskan via API
-      const resProjects = await fetch('/api/supervisor/projects');
-      const { projects: projData } = await resProjects.json();
-      if (projData) {
-        // Filter hanya proyek aktif
-        setProjects((projData as Project[]).filter(p => p.status === "aktif"));
-      }
-
-      // Ambil material via API
-      const resMaterials = await fetch('/api/supervisor/materials');
-      const { materials: matData } = await resMaterials.json();
-      if (matData) setMaterials(matData as Material[]);
-
-    } catch (error) {
-      console.error("Gagal mengambil data:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
 
   // Restore last selected project from localStorage
   useEffect(() => {
@@ -127,8 +98,6 @@ export default function SupervisorMaterialUsagePage() {
       }
     }
   }, [projects, selectedProjectId]);
-
-  const handleLogout = useLogout();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -165,7 +134,9 @@ export default function SupervisorMaterialUsagePage() {
       setNotes("");
 
       // Refresh material stock di state
-      await fetchData();
+      mutate('/api/supervisor/materials');
+      // Update rekap material di proyek (opsional tapi disarankan)
+      mutate(`/api/projects/${selectedProjectId}/materials`);
     } catch (error: unknown) {
       console.error("Submit error:", error);
       setErrorMsg(error instanceof Error ? error.message : "Gagal mencatat penggunaan material.");
@@ -174,89 +145,11 @@ export default function SupervisorMaterialUsagePage() {
     }
   };
 
-  const initials = user?.fullname
-    ? user.fullname.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()
-    : "SP";
-
   const selectedProject = projects.find(p => p.project_id.toString() === selectedProjectId);
-  // Data stok terpilih untuk validasi max input
   const selectedMaterial = materials.find(m => m.material_id.toString() === selectedMaterialId);
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: C.bg, color: C.text }}>
-      {/* Mobile backdrop */}
-      {sidebarOpen && (
-        <div className="fixed inset-0 z-30 bg-black/70 backdrop-blur-sm lg:hidden" onClick={() => setSidebarOpen(false)} />
-      )}
-
-      {/* ═══════════ SIDEBAR ═══════════ */}
-      <aside
-        className={`fixed top-0 left-0 z-40 h-full w-64 flex flex-col border-r transition-transform duration-300 ease-in-out
-          ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
-          lg:translate-x-0 lg:static lg:z-auto`}
-        style={{ background: C.sidebar, borderColor: C.border }}
-      >
-        <div className="flex items-center gap-3 px-5 py-5 border-b" style={{ borderColor: C.border }}>
-          <Image src="/images/logo.png" alt="logo" width={36} height={36} className="object-contain drop-shadow-[0_0_8px_rgba(249,115,22,0.4)]" />
-          <div className="flex-1 min-w-0">
-            <p className="text-orange-500 font-black text-sm tracking-wider leading-none truncate">KANABUET STEEL</p>
-            <p className="text-[10px] tracking-wide mt-0.5 font-medium" style={{ color: C.subtext }}>Supervisor Panel</p>
-          </div>
-          <button onClick={() => setSidebarOpen(false)} className="ml-auto lg:hidden" style={{ color: C.muted }}>
-            <X size={18} />
-          </button>
-        </div>
-
-        <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
-          {SUPERVISOR_NAV.map(({ label, Icon, href, matchPatterns }) => {
-            const active = isNavActive(pathname, href, matchPatterns);
-            return (
-              <button
-                key={label}
-                onClick={() => { setSidebarOpen(false); router.push(href); }}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition-all duration-150
-                  ${active
-                    ? "bg-orange-500/15 text-orange-400 border border-orange-500/25"
-                    : "hover:bg-slate-100 hover:text-slate-900"
-                  }`}
-                style={!active ? { color: C.subtext } : undefined}
-              >
-                <Icon size={17} style={!active ? { color: C.muted } : undefined} className={active ? "text-orange-400" : ""} />
-                {label}
-              </button>
-            );
-          })}
-        </nav>
-
-        <div className="border-t p-4" style={{ borderColor: C.border }}>
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-9 h-9 rounded-full bg-orange-500/20 border border-orange-500/30 flex items-center justify-center text-orange-400 font-bold text-sm">
-              {initials}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold truncate" style={{ color: C.text }}>{user?.fullname ?? "Memuat..."}</p>
-              <p className="text-[11px] font-medium" style={{ color: C.muted }}>Supervisor</p>
-            </div>
-          </div>
-          <button onClick={handleLogout} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50 transition-colors font-medium">
-            <LogOut size={15} /> Logout
-          </button>
-        </div>
-      </aside>
-
-      {/* ═══════════ MAIN AREA ═══════════ */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <header className="sticky top-0 z-20 flex items-center gap-4 px-5 backdrop-blur border-b" style={{ height: 60, background: `${C.header}E6`, borderColor: C.border }}>
-          <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 rounded-lg hover:bg-slate-100 transition-colors" style={{ color: C.muted }}>
-            <Menu size={20} />
-          </button>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-sm font-bold truncate" style={{ color: C.text }}>Catat Penggunaan Material</h1>
-            <p className="text-[10px] font-medium" style={{ color: C.subtext }}>Supervisor Dashboard</p>
-          </div>
-        </header>
-
-        <main className="flex-1 overflow-y-auto p-5 lg:p-8">
+    <DashboardShell role="supervisor" title="Catat Penggunaan Material" subtitle="Supervisor Dashboard" backUrl="/dashboard/supervisor">
           <div className="max-w-3xl mx-auto space-y-6">
             
             <div className="bg-white border rounded-xl p-6 lg:p-8 shadow-sm relative overflow-hidden" style={{ borderColor: C.border }}>
@@ -483,8 +376,6 @@ export default function SupervisorMaterialUsagePage() {
               )}
             </div>
           </div>
-        </main>
-      </div>
-    </div>
+    </DashboardShell>
   );
 }

@@ -10,6 +10,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import type { Material, MaterialWithSupplier, Supplier } from "@/lib/types/database";
 import DashboardShell from "@/components/layout/DashboardShell";
+import useSWR, { mutate } from "swr";
 
 const C = {
   bg: "#F8FAFC", card: "#FFFFFF", border: "#E2E8F0",
@@ -255,9 +256,21 @@ export default function MaterialManagementPage() {
   const router = useRouter();
   const supabase = createClient();
   const [searchQuery, setSearchQuery] = useState("");
-  const [materials, setMaterials] = useState<MaterialWithSupplier[]>([]);
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const fetchMaterialsData = async () => {
+    const supabase = createClient();
+    const [resMat, resSup] = await Promise.all([
+      supabase.from("materials").select("*, suppliers(supplier_name)").order("material_name"),
+      supabase.from("suppliers").select("*").order("supplier_name")
+    ]);
+    return {
+      materials: (resMat.data || []) as MaterialWithSupplier[],
+      suppliers: (resSup.data || []) as Supplier[]
+    };
+  };
+
+  const { data, isLoading } = useSWR('admin_materials', fetchMaterialsData);
+  const materials = data?.materials || [];
+  const suppliers = data?.suppliers || [];
 
   // Modal states
   const [mounted, setMounted] = useState(false);
@@ -284,29 +297,9 @@ export default function MaterialManagementPage() {
   const [isQuickRestock, setIsQuickRestock] = useState(false);
   const [showPriceConfirmation, setShowPriceConfirmation] = useState(false);
 
-  const fetchData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const { data: matData } = await supabase
-        .from("materials")
-        .select("*, suppliers(supplier_name)")
-        .order("material_name");
-      if (matData) setMaterials(matData as MaterialWithSupplier[]);
-
-      const { data: supData } = await supabase
-        .from("suppliers")
-        .select("*")
-        .order("supplier_name");
-      if (supData) setSuppliers(supData as Supplier[]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [supabase]);
-
   useEffect(() => {
     setMounted(true);
-    fetchData();
-  }, [fetchData]);
+  }, []);
 
   const resetForm = () => {
     setFormName(""); setFormCategory(""); setFormUnit(""); setFormStock(0); setFormMinStock(0); setFormSupplierId(""); setFormUnitPrice(0);
@@ -359,7 +352,7 @@ export default function MaterialManagementPage() {
       }
       setShowAddModal(false);
       resetForm();
-      fetchData();
+      mutate('admin_materials');
     } catch (err: unknown) {
       alert("Gagal menyimpan: " + (err instanceof Error ? err.message : String(err)));
     } finally {
@@ -404,7 +397,7 @@ export default function MaterialManagementPage() {
 
       setShowRestockModal(false);
       setShowPriceConfirmation(false);
-      fetchData();
+      mutate('admin_materials');
     } catch (err: unknown) {
       alert("Gagal restock: " + (err instanceof Error ? err.message : String(err)));
     } finally {
@@ -416,7 +409,7 @@ export default function MaterialManagementPage() {
     if (!confirm(`Hapus material "${m.material_name}"?`)) return;
     const { error } = await supabase.from("materials").delete().eq("material_id", m.material_id);
     if (error) { alert("Gagal menghapus: " + error.message); return; }
-    setMaterials((prev) => prev.filter((x) => x.material_id !== m.material_id));
+    mutate('admin_materials');
   };
 
   const filtered = materials.filter((m) =>

@@ -10,6 +10,8 @@ import {
   Camera, FileText, Bell, Save, ChevronDown, Search,
 } from "lucide-react";
 import type { Project, ProjectProgress, User } from "@/lib/types/database";
+import useSWR, { mutate } from "swr";
+import { fetcher } from "@/lib/utils/fetcher";
 
 const C = {
   bg: "#F8FAFC", card: "#FFFFFF", border: "#E2E8F0",
@@ -17,8 +19,7 @@ const C = {
   sidebar: "#F1F5F9", header: "#FFFFFF",
 };
 
-import { SUPERVISOR_NAV, isNavActive } from "@/lib/config/navigation";
-import { useLogout } from "@/lib/auth/client";
+import DashboardShell from "@/components/layout/DashboardShell";
 
 function progressColor(pct: number) {
   if (pct >= 80) return "bg-emerald-500";
@@ -32,14 +33,12 @@ function formatDate(d: string | null | undefined) {
 
 export default function UpdateProgressPage() {
   const router = useRouter();
-  const pathname = usePathname();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // User & data
-  const [user, setUser] = useState<User | null>(null);
-  const [projects, setProjects] = useState<(Project & { latest_progress?: number })[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // SWR data fetching
+  const { data: projectsData, isLoading: projectsLoading } = useSWR('/api/supervisor/projects', fetcher);
+  const projects = (projectsData?.projects as (Project & { latest_progress?: number })[]) || [];
+  const isLoading = projectsLoading;
 
   // Form state
   const [selectedProjectId, setSelectedProjectId] = useState<number | "">(""); 
@@ -75,23 +74,7 @@ export default function UpdateProgressPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  const fetchData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const resUser = await fetch('/api/auth/me');
-      const { user } = await resUser.json();
-      if (user) setUser(user as User);
 
-      // Ambil proyek yang ditugaskan via API
-      const resProjects = await fetch('/api/supervisor/projects');
-      const { projects: projectData } = await resProjects.json();
-      if (projectData) setProjects(projectData);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { fetchData(); }, [fetchData]);
 
   // Sync pct ke latest progress ketika proyek dipilih
   useEffect(() => {
@@ -200,7 +183,8 @@ export default function UpdateProgressPage() {
       if (fileInputRef.current) fileInputRef.current.value = "";
 
       // Refresh data
-      await fetchData();
+      mutate('/api/supervisor/projects');
+      mutate('/api/supervisor/progress');
     } catch (err: unknown) {
       alert("Gagal menyimpan progress: " + (err instanceof Error ? err.message : String(err)));
     } finally {
@@ -208,104 +192,11 @@ export default function UpdateProgressPage() {
     }
   };
 
-  const handleLogout = useLogout();
-
-  const selectedProject = projects.find(p => p.project_id === Number(selectedProjectId));
+  const selectedProject = selectedProjectId !== "" ? projects.find(p => p.project_id === Number(selectedProjectId)) : null;
   const lastPct = selectedProject?.latest_progress ?? 0;
-  const initials = user?.fullname
-    ? user.fullname.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()
-    : "SV";
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: C.bg, color: C.text }}>
-
-      {sidebarOpen && (
-        <div className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm lg:hidden" onClick={() => setSidebarOpen(false)} />
-      )}
-
-      {/* ═══════════ SIDEBAR ═══════════ */}
-      <aside
-        className={`fixed top-0 left-0 z-40 h-full w-64 flex flex-col border-r transition-transform duration-300 ease-in-out
-          ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
-          lg:translate-x-0 lg:static lg:z-auto`}
-        style={{ background: C.sidebar, borderColor: C.border }}
-      >
-        <div className="flex items-center gap-3 px-5 py-5 border-b" style={{ borderColor: C.border }}>
-          <Image src="/images/logo.png" alt="logo" width={36} height={36} className="object-contain" />
-          <div className="flex-1 min-w-0">
-            <p className="text-orange-600 font-black text-sm tracking-wider leading-none truncate">KANABUET STEEL</p>
-            <p className="text-[10px] tracking-wide mt-0.5 font-medium" style={{ color: C.subtext }}>
-              Fabrication Management System
-            </p>
-          </div>
-          <button onClick={() => setSidebarOpen(false)} className="ml-auto lg:hidden" style={{ color: C.muted }}>
-            <X size={18} />
-          </button>
-        </div>
-        <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
-          {SUPERVISOR_NAV.map(({ label, Icon, href, matchPatterns }) => {
-            const active = isNavActive(pathname, href, matchPatterns);
-            return (
-              <button
-                key={label}
-                onClick={() => { setSidebarOpen(false); router.push(href); }}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition-all duration-150
-                  ${active
-                    ? "bg-orange-500/15 text-orange-400 border border-orange-500/25"
-                    : "hover:bg-slate-100 hover:text-slate-900"
-                  }`}
-                style={!active ? { color: C.subtext } : undefined}
-              >
-                <Icon size={17} style={!active ? { color: C.muted } : undefined} className={active ? "text-orange-400" : ""} />
-                {label}
-              </button>
-            );
-          })}
-        </nav>
-        <div className="border-t p-4" style={{ borderColor: C.border }}>
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-9 h-9 rounded-full bg-orange-100 border border-orange-200 flex items-center justify-center text-orange-600 font-bold text-sm">{initials}</div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold truncate" style={{ color: C.text }}>{user?.fullname ?? "Memuat..."}</p>
-              <p className="text-[11px] font-medium" style={{ color: C.muted }}>Supervisor</p>
-            </div>
-          </div>
-          <button onClick={handleLogout} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50 transition-colors font-medium">
-            <LogOut size={15} /> Logout
-          </button>
-        </div>
-      </aside>
-
-      {/* ═══════════ MAIN AREA ═══════════ */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-
-        {/* TOP HEADER */}
-        <header className="sticky top-0 z-20 flex items-center gap-3 px-5 border-b"
-          style={{ height: 60, background: C.header, borderColor: C.border }}>
-          <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 rounded-lg hover:bg-slate-100" style={{ color: C.muted }}>
-            <Menu size={20} />
-          </button>
-          <button onClick={() => router.push("/dashboard/supervisor")}
-            className="p-2 rounded-lg hover:bg-slate-100 transition-colors flex items-center gap-1.5 text-sm font-medium" style={{ color: C.subtext }}>
-            <ArrowLeft size={16} />
-            <span className="hidden sm:block">Kembali</span>
-          </button>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-sm font-bold" style={{ color: C.text }}>Update Progress</h1>
-            <p className="text-[10px] font-medium" style={{ color: C.subtext }}>Perbarui progres pekerjaan proyek</p>
-          </div>
-          <div className="ml-auto flex items-center gap-2">
-            <button className="relative p-2 rounded-lg hover:bg-slate-100" style={{ color: C.muted }}>
-              <Bell size={20} />
-            </button>
-            <div className="hidden sm:flex items-center gap-2 pl-2 border-l" style={{ borderColor: C.border }}>
-              <div className="w-8 h-8 rounded-full bg-orange-100 border border-orange-200 flex items-center justify-center text-orange-600 font-bold text-xs">{initials}</div>
-            </div>
-          </div>
-        </header>
-
-        {/* CONTENT */}
-        <main className="flex-1 overflow-y-auto p-5 lg:p-7 space-y-5">
+    <DashboardShell role="supervisor" title="Update Progress" subtitle="Perbarui progres pekerjaan proyek" backUrl="/dashboard/supervisor">
 
           {/* Success message */}
           {successMsg && (
@@ -539,9 +430,6 @@ export default function UpdateProgressPage() {
 
           </form>
 
-          <div className="h-6 lg:h-2" />
-        </main>
-      </div>
-    </div>
+    </DashboardShell>
   );
 }

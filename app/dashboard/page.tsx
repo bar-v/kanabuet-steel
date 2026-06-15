@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { Project, Material, DashboardStats, ProjectProgress } from "@/lib/types/database";
 import DashboardShell from "@/components/layout/DashboardShell";
 import CreateProjectModal from "@/components/projects/CreateProjectModal";
+import useSWR, { mutate } from "swr";
 
 // ── Helpers ───────────────────────────────────────────────────
 function statusBadge(s: string) {
@@ -54,15 +55,6 @@ const C = {
 export default function OwnerDashboard() {
   const router = useRouter();
   const supabase = createClient();
-
-  const [stats, setStats] = useState<DashboardStats>({
-    total_projects: 0, active_projects: 0,
-    completed_projects: 0, pending_projects: 0, low_stock_count: 0,
-  });
-  const [recentProjects, setRecentProjects] = useState<Project[]>([]);
-  const [progressList, setProgressList] = useState<ProjectProgress[]>([]);
-  const [lowStockMaterials, setLowStockMaterials] = useState<Material[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [fabOpen, setFabOpen] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
@@ -72,52 +64,41 @@ export default function OwnerDashboard() {
     { label: "Kelola Material", Icon: Package, action: () => router.push("/dashboard/materials") },
   ];
 
-  const fetchData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const { data: projects } = await supabase
-        .from("projects")
-        .select("*")
-        .order("created_at", { ascending: false });
+  const fetchDashboardData = async () => {
+    const supabase = createClient();
+    const [resProjects, resProgress, resMaterials] = await Promise.all([
+      supabase.from("projects").select("*").order("created_at", { ascending: false }),
+      supabase.from("project_progress").select("*").order("created_at", { ascending: false }),
+      supabase.from("materials").select("*").order("current_stock", { ascending: true })
+    ]);
+    return {
+      projects: (resProjects.data || []) as Project[],
+      progress: (resProgress.data || []) as ProjectProgress[],
+      materials: (resMaterials.data || []) as Material[]
+    };
+  };
 
-      if (projects) {
-        const ps = projects as Project[];
-        setStats({
-          total_projects: ps.length,
-          active_projects: ps.filter((p) => p.status === "aktif").length,
-          completed_projects: ps.filter((p) => p.status === "selesai").length,
-          pending_projects: ps.filter((p) => p.status === "tertunda" || p.status === "menunggu_validasi").length,
-          low_stock_count: 0,
-        });
-        setRecentProjects(ps.slice(0, 5));
-      }
+  const { data, isLoading } = useSWR('admin_dashboard_data', fetchDashboardData);
 
-      const { data: progress } = await supabase
-        .from("project_progress")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (progress) setProgressList(progress as ProjectProgress[]);
+  const projects = data?.projects || [];
+  const progressList = data?.progress || [];
+  const materials = data?.materials || [];
 
-      const { data: materials } = await supabase
-        .from("materials")
-        .select("*")
-        .order("current_stock", { ascending: true })
-        .limit(5);
-      if (materials) {
-        const lowStock = (materials as Material[]).filter((m) => m.current_stock < m.minimum_stock);
-        setLowStockMaterials(lowStock);
-        setStats((prev) => ({ ...prev, low_stock_count: lowStock.length }));
-      }
-    } catch (err) {
-      console.error("Error fetching dashboard data:", err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [supabase]);
+  const activeProjects = projects.filter(p => p.status === "aktif").length;
+  const completedProjects = projects.filter(p => p.status === "selesai").length;
+  const pendingProjects = projects.filter(p => p.status === "tertunda" || p.status === "menunggu_validasi").length;
+  
+  const lowStockMaterials = materials.filter(m => m.current_stock < m.minimum_stock).slice(0, 5);
+  
+  const stats = {
+    total_projects: projects.length,
+    active_projects: activeProjects,
+    completed_projects: completedProjects,
+    pending_projects: pendingProjects,
+    low_stock_count: materials.filter(m => m.current_stock < m.minimum_stock).length,
+  };
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  const recentProjects = projects.slice(0, 5);
 
   const STATS = [
     { label: "Total Proyek", value: stats.total_projects, color: "text-orange-600", iconBg: "bg-orange-50", border: "border-orange-200", Icon: LayoutGrid },
@@ -317,7 +298,8 @@ export default function OwnerDashboard() {
           onClose={() => setShowCreateModal(false)}
           onSuccess={() => {
             setShowCreateModal(false);
-            fetchData();
+            mutate('admin_dashboard_data');
+            mutate('admin_projects'); // Also mutate projects list
           }}
         />
       )}

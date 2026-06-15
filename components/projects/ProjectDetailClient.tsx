@@ -12,6 +12,8 @@ import {
 import type {
   Project, ProjectProgress, ProjectMember, Material, User
 } from "@/lib/types/database";
+import useSWR, { mutate } from "swr";
+import { fetcher } from "@/lib/utils/fetcher";
 
 const DynamicMap = dynamic(() => import("@/components/MapPicker"), { ssr: false });
 
@@ -75,15 +77,23 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
 
   const [activeTab, setActiveTab] = useState<Tab>("Overview");
 
-  // Data state
-  const [project, setProject] = useState<Project | null>(null);
-  const [latestProgress, setLatestProgress] = useState(0);
-  const [progressHistory, setProgressHistory] = useState<any[]>([]);
-  const [members, setMembers] = useState<ProjectMember[]>([]);
-  const [materialUsage, setMaterialUsage] = useState<MaterialUsageItem[]>([]);
-  const [materials, setMaterials] = useState<Material[]>([]); // for modal
-  const [photos, setPhotos] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // SWR Fetching
+  const { data: projectData, isLoading: projectLoading } = useSWR(`/api/projects/${projectId}`, fetcher);
+  const { data: progressData, isLoading: progressLoading } = useSWR(`/api/projects/${projectId}/progress`, fetcher);
+  const { data: membersData, isLoading: membersLoading } = useSWR(`/api/projects/${projectId}/members`, fetcher);
+  const { data: usageData, isLoading: usageLoading } = useSWR(`/api/projects/${projectId}/materials`, fetcher);
+  const { data: docsData, isLoading: docsLoading } = useSWR(`/api/projects/${projectId}/documentation`, fetcher);
+  const { data: materialsData, isLoading: materialsLoading } = useSWR(role === "supervisor" ? '/api/supervisor/materials' : null, fetcher);
+
+  const project = projectData?.project as Project | undefined;
+  const latestProgress = projectData?.latestProgress as number | undefined ?? 0;
+  const progressHistory = progressData?.progressHistory as any[] | undefined ?? [];
+  const members = membersData?.members as ProjectMember[] | undefined ?? [];
+  const materialUsage = usageData?.usage as MaterialUsageItem[] | undefined ?? [];
+  const photos = docsData?.photos as any[] | undefined ?? [];
+  const materials = materialsData?.materials as Material[] | undefined ?? [];
+
+  const isLoading = projectLoading || progressLoading || membersLoading || usageLoading || docsLoading || (role === "supervisor" && materialsLoading);
 
   // Modal State
   const [showDocsModal, setShowDocsModal] = useState(false);
@@ -92,65 +102,6 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
   const [usageQuantity, setUsageQuantity] = useState("");
   const [usageNotes, setUsageNotes] = useState("");
   const [isSubmittingUsage, setIsSubmittingUsage] = useState(false);
-
-  const fetchData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      // 1. Project details
-      const resProject = await fetch(`/api/projects/${projectId}`);
-      if (resProject.ok) {
-        const data = await resProject.json();
-        setProject(data.project);
-        setLatestProgress(data.latestProgress);
-      }
-
-      // 2. Progress
-      const resProgress = await fetch(`/api/projects/${projectId}/progress`);
-      if (resProgress.ok) {
-        const data = await resProgress.json();
-        setProgressHistory(data.progressHistory || []);
-      }
-
-      // 3. Members
-      const resMembers = await fetch(`/api/projects/${projectId}/members`);
-      if (resMembers.ok) {
-        const data = await resMembers.json();
-        setMembers(data.members || []);
-      }
-
-      // 4. Materials Usage
-      const resUsage = await fetch(`/api/projects/${projectId}/materials`);
-      if (resUsage.ok) {
-        const data = await resUsage.json();
-        setMaterialUsage(data.usage || []);
-      }
-
-      // 5. Documentation
-      const resDocs = await fetch(`/api/projects/${projectId}/documentation`);
-      if (resDocs.ok) {
-        const data = await resDocs.json();
-        setPhotos(data.photos || []);
-      }
-
-      // 6. If supervisor, fetch material master for the modal
-      if (role === "supervisor") {
-        const resMaterials = await fetch('/api/supervisor/materials');
-        if (resMaterials.ok) {
-          const { materials: m } = await resMaterials.json();
-          setMaterials(m || []);
-        }
-      }
-
-    } catch (err) {
-      console.error("Failed to fetch project details", err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [projectId, role]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
 
   const handleSubmitUsage = async () => {
     if (!selectedMaterialId || !usageQuantity || Number(usageQuantity) <= 0) return;
@@ -178,7 +129,8 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
       setSelectedMaterialId("");
       setUsageQuantity("");
       setUsageNotes("");
-      await fetchData();
+      mutate(`/api/projects/${projectId}/materials`);
+      if (role === "supervisor") mutate('/api/supervisor/materials');
     } catch {
       alert("Terjadi kesalahan.");
     } finally {

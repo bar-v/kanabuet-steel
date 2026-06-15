@@ -8,6 +8,7 @@ import {
   Users, Plus, Trash2, X, Phone, Briefcase, ChevronLeft,
   UserCircle2, Search,
 } from 'lucide-react';
+import useSWR, { mutate } from 'swr';
 
 const C = {
   bg: "#F8FAFC", card: "#FFFFFF", border: "#E2E8F0",
@@ -23,10 +24,6 @@ export default function ProjectMembersPage({ params }: Props) {
   const supabase = createClient();
 
   const [projectId, setProjectId] = useState<number | null>(null);
-  const [project, setProject] = useState<(Project & { supervisor?: { fullname: string; email: string } | null }) | null>(null);
-  const [members, setMembers] = useState<ProjectMember[]>([]);
-  const [workerHistory, setWorkerHistory] = useState<WorkerHistoryItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
   // Modal state
   const [showModal, setShowModal] = useState(false);
@@ -45,48 +42,52 @@ export default function ProjectMembersPage({ params }: Props) {
     params.then(({ id }) => setProjectId(Number(id)));
   }, [params]);
 
-  const fetchData = useCallback(async () => {
-    if (!projectId) return;
-    setIsLoading(true);
-    try {
-      // Fetch project details
-      const { data: projectData } = await supabase
-        .from('projects')
-        .select('*, supervisor:users!supervisor_id(fullname, email)')
-        .eq('project_id', projectId)
-        .single();
-      if (projectData) setProject(projectData as any);
+  const fetchMembersData = async () => {
+    if (!projectId) return null;
+    const supabase = createClient();
+    
+    // Fetch project details
+    const { data: projectData } = await supabase
+      .from('projects')
+      .select('*, supervisor:users!supervisor_id(fullname, email)')
+      .eq('project_id', projectId)
+      .single();
 
-      // Fetch members for this project
-      const { data: memberData } = await supabase
-        .from('project_members')
-        .select('*')
-        .eq('project_id', projectId)
-        .order('member_id', { ascending: true });
-      if (memberData) setMembers(memberData as ProjectMember[]);
+    // Fetch members for this project
+    const { data: memberData } = await supabase
+      .from('project_members')
+      .select('*')
+      .eq('project_id', projectId)
+      .order('member_id', { ascending: true });
 
-      // Fetch unique workers from ALL project_members (histori)
-      const { data: historyData } = await supabase
-        .from('project_members')
-        .select('member_name, phone_number, project_role');
-      if (historyData) {
-        // Deduplicate by member_name
-        const seen = new Set<string>();
-        const unique: WorkerHistoryItem[] = [];
-        for (const item of historyData as WorkerHistoryItem[]) {
-          if (!seen.has(item.member_name)) {
-            seen.add(item.member_name);
-            unique.push(item);
-          }
+    // Fetch unique workers from ALL project_members (histori)
+    const { data: historyData } = await supabase
+      .from('project_members')
+      .select('member_name, phone_number, project_role');
+
+    let uniqueHistory: WorkerHistoryItem[] = [];
+    if (historyData) {
+      const seen = new Set<string>();
+      for (const item of historyData as WorkerHistoryItem[]) {
+        if (!seen.has(item.member_name)) {
+          seen.add(item.member_name);
+          uniqueHistory.push(item);
         }
-        setWorkerHistory(unique.sort((a, b) => a.member_name.localeCompare(b.member_name)));
       }
-    } finally {
-      setIsLoading(false);
+      uniqueHistory.sort((a, b) => a.member_name.localeCompare(b.member_name));
     }
-  }, [projectId, supabase]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+    return {
+      project: projectData as (Project & { supervisor?: { fullname: string; email: string } | null }) | null,
+      members: (memberData || []) as ProjectMember[],
+      workerHistory: uniqueHistory
+    };
+  };
+
+  const { data, isLoading } = useSWR(projectId ? `admin_project_members_${projectId}` : null, fetchMembersData);
+  const project = data?.project || null;
+  const members = data?.members || [];
+  const workerHistory = data?.workerHistory || [];
 
   const handleSelectWorker = (worker: WorkerHistoryItem) => {
     setSelectedWorker(worker);
@@ -137,7 +138,7 @@ export default function ProjectMembersPage({ params }: Props) {
 
       if (error) throw error;
 
-      setMembers(prev => [...prev, data as ProjectMember]);
+      mutate(`admin_project_members_${projectId}`);
       setShowModal(false);
       resetForm();
     } catch (err: unknown) {
@@ -154,7 +155,7 @@ export default function ProjectMembersPage({ params }: Props) {
       .delete()
       .eq('member_id', memberId);
     if (error) { alert('Gagal menghapus: ' + error.message); return; }
-    setMembers(prev => prev.filter(m => m.member_id !== memberId));
+    mutate(`admin_project_members_${projectId}`);
   };
 
   const filteredHistory = workerHistory.filter(w =>

@@ -11,6 +11,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { Project, ProjectProgress, ProjectStatus } from "@/lib/types/database";
 import DashboardShell from "@/components/layout/DashboardShell";
 import CreateProjectModal from "@/components/projects/CreateProjectModal";
+import useSWR, { mutate } from "swr";
 
 // ── Design tokens ─────────────────────────────────────────────
 const C = {
@@ -69,33 +70,24 @@ export default function ProjectManagementPage() {
   const supabase = createClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<ProjectStatus | "semua">("semua");
-
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [progressList, setProgressList] = useState<ProjectProgress[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  const fetchProjects = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const { data: projectData } = await supabase
-        .from("projects")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (projectData) setProjects(projectData as Project[]);
+  const fetchProjectsData = async () => {
+    const supabase = createClient();
+    const [projectData, progressData] = await Promise.all([
+      supabase.from("projects").select("*").order("created_at", { ascending: false }),
+      supabase.from("project_progress").select("*").order("created_at", { ascending: false })
+    ]);
+    return {
+      projects: (projectData.data || []) as Project[],
+      progressList: (progressData.data || []) as ProjectProgress[]
+    };
+  };
 
-      const { data: progressData } = await supabase
-        .from("project_progress")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (progressData) setProgressList(progressData as ProjectProgress[]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [supabase]);
-
-  useEffect(() => { fetchProjects(); }, [fetchProjects]);
+  const { data, isLoading } = useSWR('admin_projects', fetchProjectsData);
+  const projects = data?.projects || [];
+  const progressList = data?.progressList || [];
 
   const handleDelete = async (projectId: number, projectName: string) => {
     if (!confirm(`Hapus proyek "${projectName}"? Tindakan ini tidak bisa dibatalkan.`)) return;
@@ -103,7 +95,8 @@ export default function ProjectManagementPage() {
     try {
       const { error } = await supabase.from("projects").delete().eq("project_id", projectId);
       if (error) throw error;
-      setProjects(prev => prev.filter(p => p.project_id !== projectId));
+      mutate('admin_projects');
+      mutate('admin_dashboard_data');
     } catch (err: unknown) {
       alert("Gagal menghapus proyek: " + (err instanceof Error ? err.message : String(err)));
     } finally {
@@ -302,7 +295,8 @@ export default function ProjectManagementPage() {
           onClose={() => setShowCreateModal(false)}
           onSuccess={() => {
             setShowCreateModal(false);
-            fetchProjects();
+            mutate('admin_projects');
+            mutate('admin_dashboard_data');
           }}
         />
       )}

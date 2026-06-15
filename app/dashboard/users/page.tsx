@@ -8,6 +8,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@/lib/types/database";
 import DashboardShell from "@/components/layout/DashboardShell";
+import useSWR, { mutate } from "swr";
 
 const C = {
   bg: "#F8FAFC", card: "#FFFFFF", border: "#E2E8F0",
@@ -21,8 +22,6 @@ function formatDate(d: string | null | undefined) {
 
 export default function UserManagementPage() {
   const supabase = createClient();
-  const [users, setUsers] = useState<User[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
   // Modal
@@ -35,21 +34,18 @@ export default function UserManagementPage() {
   const [formEmail, setFormEmail] = useState("");
   const [formPassword, setFormPassword] = useState("");
 
-  const fetchUsers = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const { data } = await supabase
-        .from("users")
-        .select("*")
-        .eq("system_role", "supervisor")
-        .order("created_at", { ascending: false });
-      if (data) setUsers(data as User[]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [supabase]);
+  const fetchUsersData = async () => {
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("users")
+      .select("*")
+      .eq("system_role", "supervisor")
+      .order("created_at", { ascending: false });
+    return (data || []) as User[];
+  };
 
-  useEffect(() => { fetchUsers(); }, [fetchUsers]);
+  const { data: usersData, isLoading } = useSWR('admin_users', fetchUsersData);
+  const users = usersData || [];
 
   const resetForm = () => { setFormName(""); setFormEmail(""); setFormPassword(""); setEditingUser(null); };
 
@@ -105,7 +101,7 @@ export default function UserManagementPage() {
       }
       setShowModal(false);
       resetForm();
-      fetchUsers();
+      mutate('admin_users');
     } catch (err: unknown) {
       alert("Gagal menyimpan: " + (err instanceof Error ? err.message : String(err)));
     } finally {
@@ -118,7 +114,7 @@ export default function UserManagementPage() {
     if (!confirm(`${u.is_active ? "Nonaktifkan" : "Aktifkan"} supervisor "${u.fullname}"?`)) return;
     const { error } = await supabase.from("users").update({ is_active: !u.is_active }).eq("user_id", u.user_id);
     if (error) { alert("Gagal: " + error.message); return; }
-    setUsers((prev) => prev.map((x) => x.user_id === u.user_id ? { ...x, is_active: !x.is_active } : x));
+    mutate('admin_users');
   };
 
   const filtered = users.filter((u) =>

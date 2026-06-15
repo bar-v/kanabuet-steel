@@ -11,6 +11,8 @@ import {
   CheckCircle2, FileText,
 } from "lucide-react";
 import type { Project, User, ProjectProgress, ProjectMember } from "@/lib/types/database";
+import useSWR, { mutate } from "swr";
+import { fetcher } from "@/lib/utils/fetcher";
 
 // ── Design tokens ─────────────────────────────────────────────
 const C = {
@@ -19,8 +21,7 @@ const C = {
   sidebar: "#F1F5F9", header: "#FFFFFF",
 };
 
-import { SUPERVISOR_NAV, isNavActive } from "@/lib/config/navigation";
-import { useLogout } from "@/lib/auth/client";
+import DashboardShell from "@/components/layout/DashboardShell";
 
 // ── Helpers ───────────────────────────────────────────────────
 function statusBadge(s: string) {
@@ -56,14 +57,16 @@ type GpsState =
 // ── Component ─────────────────────────────────────────────────
 export default function SupervisorDashboard() {
   const router = useRouter();
-  const pathname = usePathname();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Data state
-  const [user, setUser] = useState<User | null>(null);
-  const [projects, setProjects] = useState<(Project & { latest_progress?: number })[]>([]);
-  const [recentProgress, setRecentProgress] = useState<ProjectProgress[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // SWR data fetching
+  const { data: authData, isLoading: authLoading } = useSWR('/api/auth/me', fetcher);
+  const { data: projectsData, isLoading: projectsLoading } = useSWR('/api/supervisor/projects', fetcher);
+  const { data: progressData, isLoading: progressLoading } = useSWR('/api/supervisor/progress', fetcher);
+
+  const user = authData?.user as User | undefined;
+  const projects = (projectsData?.projects as (Project & { latest_progress?: number })[]) || [];
+  const recentProgress = (progressData?.progress as ProjectProgress[])?.slice(0, 5) || [];
+  const isLoading = authLoading || projectsLoading || progressLoading;
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -78,32 +81,7 @@ export default function SupervisorDashboard() {
   // Proyek yang dipilih untuk validasi lokasi
   const [selectedValidationProject, setSelectedValidationProject] = useState<number | "">("");
 
-  const fetchData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      // Ambil user yang login
-      const resUser = await fetch('/api/auth/me');
-      const { user } = await resUser.json();
-      if (!user) return;
-      setUser(user as User);
 
-      // Ambil proyek yang ditugaskan via API (sudah termasuk latest_progress)
-      const resProjects = await fetch('/api/supervisor/projects');
-      const { projects: projectData } = await resProjects.json();
-      if (projectData) setProjects(projectData);
-
-      // Ambil progress terbaru via API
-      const resProgress = await fetch('/api/supervisor/progress');
-      const { progress: progressData } = await resProgress.json();
-      if (progressData) {
-        setRecentProgress(progressData.slice(0, 5));
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { fetchData(); }, [fetchData]);
 
   // Validasi active_project_id
   useEffect(() => {
@@ -162,7 +140,7 @@ export default function SupervisorDashboard() {
       alert("Lokasi proyek berhasil divalidasi! Status proyek kini: Aktif.");
       setGps({ status: "idle" });
       setSelectedValidationProject("");
-      await fetchData();
+      mutate('/api/supervisor/projects');
     } catch {
       alert("Terjadi kesalahan saat menyimpan lokasi.");
     }
@@ -189,118 +167,17 @@ export default function SupervisorDashboard() {
       }
 
       alert("Lokasi proyek berhasil diperbarui.");
-      await fetchData();
+      mutate('/api/supervisor/projects');
     } catch {
       alert("Terjadi kesalahan saat memperbarui lokasi.");
     }
   };
 
-  const handleLogout = useLogout();
-
-  const initials = user?.fullname
-    ? user.fullname.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase()
-    : "SV";
-
   const activeProject = activeProjectId ? projects.find(p => p.project_id.toString() === activeProjectId) : null;
   const pendingProjects = projects.filter(p => p.status === "menunggu_validasi");
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: C.bg, color: C.text }}>
-
-      {sidebarOpen && (
-        <div className="fixed inset-0 z-30 bg-black/70 backdrop-blur-sm lg:hidden" onClick={() => setSidebarOpen(false)} />
-      )}
-
-      {/* ═══════════ SIDEBAR ═══════════ */}
-      <aside
-        className={`fixed top-0 left-0 z-40 h-full w-64 flex flex-col border-r transition-transform duration-300 ease-in-out
-          ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
-          lg:translate-x-0 lg:static lg:z-auto`}
-        style={{ background: C.sidebar, borderColor: C.border }}
-      >
-        <div className="flex items-center gap-3 px-5 py-5 border-b" style={{ borderColor: C.border }}>
-          <Image src="/images/logo.png" alt="logo" width={36} height={36}
-            className="object-contain drop-shadow-[0_0_8px_rgba(249,115,22,0.4)]" />
-          <div className="flex-1 min-w-0">
-            <p className="text-orange-500 font-black text-sm tracking-wider leading-none truncate">KANABUET STEEL</p>
-            <p className="text-[10px] tracking-wide mt-0.5 font-medium" style={{ color: C.subtext }}>
-              Fabrication Management System
-            </p>
-          </div>
-          <button onClick={() => setSidebarOpen(false)} className="ml-auto lg:hidden" style={{ color: C.muted }}>
-            <X size={18} />
-          </button>
-        </div>
-
-        <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
-          {SUPERVISOR_NAV.map(({ label, Icon, href, matchPatterns }) => {
-            const active = isNavActive(pathname, href, matchPatterns);
-            return (
-              <button
-                key={label}
-                onClick={() => { setSidebarOpen(false); router.push(href); }}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition-all duration-150
-                  ${active
-                    ? "bg-orange-500/15 text-orange-400 border border-orange-500/25"
-                    : "hover:bg-slate-100 hover:text-slate-900"
-                  }`}
-                style={!active ? { color: C.subtext } : undefined}
-              >
-                <Icon size={17} style={!active ? { color: C.muted } : undefined} className={active ? "text-orange-400" : ""} />
-                {label}
-              </button>
-            );
-          })}
-        </nav>
-
-        <div className="border-t p-4" style={{ borderColor: C.border }}>
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-9 h-9 rounded-full bg-orange-500/20 border border-orange-500/30 flex items-center justify-center text-orange-400 font-bold text-sm">
-              {initials}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold truncate" style={{ color: C.text }}>{user?.fullname ?? "Memuat..."}</p>
-              <p className="text-[11px] font-medium" style={{ color: C.muted }}>Supervisor</p>
-            </div>
-          </div>
-          <button onClick={handleLogout}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50 transition-colors font-medium">
-            <LogOut size={15} /> Logout
-          </button>
-        </div>
-      </aside>
-
-      {/* ═══════════ MAIN AREA ═══════════ */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-
-        {/* TOP HEADER */}
-        <header
-          className="sticky top-0 z-20 flex items-center gap-4 px-5 backdrop-blur border-b"
-          style={{ height: 60, background: `${C.header}E6`, borderColor: C.border }}
-        >
-          <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 rounded-lg hover:bg-slate-100" style={{ color: C.muted }}>
-            <Menu size={20} />
-          </button>
-          <div>
-            <h1 className="text-base font-bold" style={{ color: C.text }}>Dashboard Supervisor</h1>
-            <p className="text-[10px] font-medium tracking-wide" style={{ color: C.subtext }}>
-              {user?.fullname ?? ""}
-            </p>
-          </div>
-          <div className="ml-auto flex items-center gap-2">
-            <button className="relative p-2 rounded-lg hover:bg-slate-100" style={{ color: C.muted }}>
-              <Bell size={20} />
-            </button>
-            <div className="hidden sm:flex items-center gap-2 pl-2 border-l" style={{ borderColor: C.border }}>
-              <div className="w-8 h-8 rounded-full bg-orange-500/20 border border-orange-500/30 flex items-center justify-center text-orange-400 font-bold text-xs">
-                {initials}
-              </div>
-            </div>
-          </div>
-        </header>
-
-        {/* SCROLLABLE CONTENT */}
-        <main className="flex-1 overflow-y-auto p-5 lg:p-7 space-y-7">
+    <DashboardShell role="supervisor" title="Dashboard Supervisor" subtitle={user?.fullname ?? ""}>
 
           {/* 1. RINGKASAN PROYEK AKTIF */}
           <section>
@@ -448,9 +325,6 @@ export default function SupervisorDashboard() {
           )}
 
 
-          <div className="h-24 lg:h-4" />
-        </main>
-      </div>
-    </div>
+    </DashboardShell>
   );
 }
