@@ -16,43 +16,12 @@ import useSWR, { mutate } from "swr";
 import { fetcher } from "@/lib/utils/fetcher";
 import AddMemberModal from "./AddMemberModal";
 import { createClient } from "@/lib/supabase/client";
+import { formatDate, formatRupiah } from "@/lib/utils/formatters";
+import { C, getStatusStyle, getStatusLabel, getProgressColor } from "@/lib/utils/theme";
 
 const DynamicMap = dynamic(() => import("@/components/MapPicker"), { ssr: false });
 
-const C = {
-  bg: "#F8FAFC", card: "#FFFFFF", border: "#E2E8F0",
-  text: "#0F172A", subtext: "#334155", muted: "#64748B",
-};
 
-function statusBadge(s: string) {
-  if (s === "selesai") return "bg-emerald-50 text-emerald-700 border border-emerald-200";
-  if (s === "aktif") return "bg-orange-50 text-orange-700 border border-orange-200";
-  if (s === "menunggu_validasi") return "bg-sky-50 text-sky-700 border border-sky-200";
-  return "bg-amber-50 text-amber-700 border border-amber-200";
-}
-
-function statusLabel(s: string) {
-  if (s === "selesai") return "Selesai";
-  if (s === "aktif") return "Aktif";
-  if (s === "menunggu_validasi") return "Menunggu Validasi";
-  if (s === "tertunda") return "Tertunda";
-  return s;
-}
-
-function progressColor(pct: number) {
-  if (pct >= 80) return "bg-emerald-500";
-  if (pct >= 50) return "bg-orange-400";
-  return "bg-amber-500";
-}
-
-function formatDate(d: string | null | undefined) {
-  if (!d) return "—";
-  return new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
-}
-
-function formatRupiah(value: number) {
-  return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(value || 0);
-}
 
 interface MaterialUsageItem {
   usage_id: number;
@@ -189,8 +158,8 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
           <div className="flex items-start justify-between gap-3 mb-2">
             <h1 className="text-sm sm:text-lg font-bold leading-tight" style={{ color: C.text }}>{project.project_name}</h1>
             <div className="flex items-center gap-2">
-              <span className={`shrink-0 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide ${statusBadge(project.status)}`}>
-                {statusLabel(project.status)}
+              <span className={`shrink-0 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide border ${getStatusStyle(project.status)}`}>
+                {getStatusLabel(project.status)}
               </span>
               {role === "owner" && (
                 <button
@@ -208,7 +177,7 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
               <span className="text-lg font-black text-orange-400">{latestProgress}%</span>
             </div>
             <div className="h-2.5 rounded-full overflow-hidden" style={{ background: C.border }}>
-              <div className={`h-full rounded-full transition-all duration-500 ${progressColor(latestProgress)}`} style={{ width: `${latestProgress}%` }} />
+              <div className={`h-full rounded-full transition-all duration-500 ${getProgressColor(latestProgress)}`} style={{ width: `${latestProgress}%` }} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3 pt-1">
@@ -396,7 +365,7 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
                         </div>
                         {!isJustDocs && (
                           <div className="h-2 rounded-full overflow-hidden mb-3" style={{ background: C.border }}>
-                            <div className={`h-full rounded-full transition-all duration-500 ${progressColor(p.percentage)}`} style={{ width: `${p.percentage}%` }} />
+                            <div className={`h-full rounded-full transition-all duration-500 ${getProgressColor(p.percentage)}`} style={{ width: `${p.percentage}%` }} />
                           </div>
                         )}
                         {p.notes && <p className="text-sm font-medium mt-1" style={{ color: C.subtext }}>{p.notes}</p>}
@@ -530,7 +499,7 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
                     {role === "owner" && m.member_id !== -1 && (
                       <button
                         onClick={() => handleDeleteMember(m.member_id, m.member_name)}
-                        className="p-1.5 rounded-lg hover:bg-red-50 text-red-500 opacity-0 group-hover:opacity-100 transition-all shrink-0"
+                        className="p-1.5 rounded-lg hover:bg-red-50 text-red-500 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all shrink-0"
                         title="Hapus anggota"
                       >
                         <Trash2 size={15} />
@@ -693,7 +662,7 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
                       {(photosInDate as any[]).map((photo) => (
                         <div key={photo.progress_id} className="group relative rounded-xl overflow-hidden shadow-sm border border-slate-200 bg-white aspect-square">
                           <img src={photo.photo_url} alt="Dokumentasi" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
+                          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
                             <span className="text-xs font-black text-white">{photo.percentage}% Progress</span>
                             {photo.notes && <p className="text-[10px] text-slate-200 line-clamp-2 mt-1 leading-snug">{photo.notes}</p>}
                             <a href={photo.photo_url} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-[10px] font-bold text-sky-400 hover:text-sky-300">

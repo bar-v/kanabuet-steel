@@ -135,9 +135,9 @@ export default function SupplierManagementPage() {
               </p>
             </div>
           ) : (
-            <div className="divide-y" style={{ borderColor: C.border }}>
+            <div className="flex flex-col">
               {filtered.map((s) => (
-                <div key={s.supplier_id} className="p-4 flex items-center gap-4 hover:bg-slate-50/50 transition-colors group">
+                <div key={s.supplier_id} className="p-4 border-b flex items-center gap-4 hover:bg-slate-50/50 transition-colors group" style={{ borderColor: C.border }}>
                   <div className="w-11 h-11 rounded-full bg-orange-100 border border-orange-200 flex items-center justify-center text-orange-600 font-bold text-sm shrink-0">
                     {s.supplier_name.charAt(0).toUpperCase()}
                   </div>
@@ -156,7 +156,7 @@ export default function SupplierManagementPage() {
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                  <div className="flex items-center gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity shrink-0">
                     <button onClick={() => openEdit(s)} className="p-1.5 hover:bg-slate-100 text-slate-500 rounded-md" title="Edit">
                       <Edit2 size={14} />
                     </button>
