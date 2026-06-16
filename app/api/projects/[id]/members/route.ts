@@ -15,18 +15,19 @@ export async function GET(
       return NextResponse.json({ error: "ID proyek tidak valid." }, { status: 400 });
     }
 
-    // Verify access
+    // Get project and verify access
+    let query = supabaseAdmin
+      .from("projects")
+      .select("supervisor_id, users!projects_supervisor_id_fkey(fullname)")
+      .eq("project_id", projectId);
+
     if (user.system_role === "supervisor") {
-      const { data: project } = await supabaseAdmin
-        .from("projects")
-        .select("project_id")
-        .eq("project_id", projectId)
-        .eq("supervisor_id", user.user_id)
-        .single();
-        
-      if (!project) {
-        return NextResponse.json({ error: "Proyek tidak ditemukan atau Anda tidak memiliki akses." }, { status: 404 });
-      }
+      query = query.eq("supervisor_id", user.user_id);
+    }
+
+    const { data: project } = await query.single();
+    if (!project) {
+      return NextResponse.json({ error: "Proyek tidak ditemukan atau Anda tidak memiliki akses." }, { status: 404 });
     }
 
     const { data: members, error } = await supabaseAdmin
@@ -39,7 +40,22 @@ export async function GET(
        return NextResponse.json({ error: "Gagal mengambil anggota tim." }, { status: 500 });
     }
 
-    return NextResponse.json({ members: members || [] });
+    const allMembers = [];
+    
+    // Inject supervisor as a pseudo-member if exists
+    if (project.supervisor_id && project.users && !Array.isArray(project.users)) {
+      allMembers.push({
+        member_id: -1, // pseudo ID
+        project_id: projectId,
+        member_name: (project.users as any).fullname,
+        phone_number: null,
+        project_role: "Supervisor Proyek",
+      });
+    }
+    
+    allMembers.push(...(members || []));
+
+    return NextResponse.json({ members: allMembers });
   } catch (response) {
     if (response instanceof NextResponse) return response;
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

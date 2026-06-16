@@ -590,9 +590,9 @@ export default function MaterialManagementPage() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => { setShowAddModal(false); resetForm(); }} />
           <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="px-6 py-4 border-b flex items-center justify-between">
-              <h2 className="font-bold text-lg">{editingMaterial ? "Edit Material" : "Tambah Material"}</h2>
-              <button onClick={() => { setShowAddModal(false); resetForm(); }} className="p-2 hover:bg-slate-100 rounded-full text-slate-400"><X size={20} /></button>
+            <div className="px-6 py-4 border-b border-orange-200 flex items-center justify-between">
+              <h2 className="font-bold text-lg text-slate-800">{editingMaterial ? "Edit Material" : "Tambah Material"}</h2>
+              <button onClick={() => { setShowAddModal(false); resetForm(); }} className="p-2 hover:bg-orange-50 rounded-full text-orange-400 hover:text-orange-600 transition-colors"><X size={20} /></button>
             </div>
             <form onSubmit={handleSaveMaterial} className="flex-1 overflow-y-auto p-6 space-y-4">
               <div>
@@ -666,13 +666,12 @@ export default function MaterialManagementPage() {
       {showRestockModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setShowRestockModal(false)} />
-          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col">
-            <div className="px-6 py-4 border-b flex items-center justify-between">
+          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="px-6 py-4 border-b border-orange-200 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-600"><Archive size={18} /></div>
-                <h2 className="font-bold text-lg">{isQuickRestock ? "Restock Cepat" : "Restock Material"}</h2>
+                <h2 className="font-bold text-lg text-slate-800">{isQuickRestock ? "Restock Cepat" : "Restock Material"}</h2>
               </div>
-              <button onClick={() => setShowRestockModal(false)} className="p-2 hover:bg-slate-100 rounded-full text-slate-400"><X size={20} /></button>
+              <button onClick={() => setShowRestockModal(false)} className="p-2 hover:bg-orange-50 rounded-full text-orange-400 hover:text-orange-600 transition-colors"><X size={20} /></button>
             </div>
             {showPriceConfirmation ? (
               <div className="p-6 space-y-6">

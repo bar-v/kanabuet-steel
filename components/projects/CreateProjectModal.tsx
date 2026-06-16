@@ -159,20 +159,20 @@ export default function CreateProjectModal({ onClose, onSuccess }: CreateProject
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
       <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-4xl max-h-[95vh] overflow-y-auto bg-white rounded-2xl shadow-2xl flex flex-col">
+      <div className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[95vh]">
         {/* Header */}
-        <div className="px-6 py-4 border-b flex items-center justify-between sticky top-0 bg-white z-10 rounded-t-2xl">
+        <div className="px-6 py-4 border-b border-orange-200 flex items-center justify-between">
           <div>
             <h2 className="font-bold text-xl text-slate-800">Buat Proyek Baru</h2>
             <p className="text-xs text-slate-500 mt-0.5">Isi rincian untuk memulai proyek fabrikasi baja/besi baru.</p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full text-slate-400 transition-colors">
+          <button onClick={onClose} className="p-2 hover:bg-orange-50 rounded-full text-orange-400 hover:text-orange-600 transition-colors">
             <X size={20} />
           </button>
         </div>
 
         {/* Body */}
-        <div className="p-6">
+        <div className="flex-1 overflow-y-auto p-6">
           <form id="createProjectForm" className="flex flex-col gap-6" onSubmit={handleSubmit}>
             {/* Informasi Proyek */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -180,7 +180,7 @@ export default function CreateProjectModal({ onClose, onSuccess }: CreateProject
                 <label className="block mb-1.5 font-bold text-xs text-slate-700">Nama Proyek *</label>
                 <input
                   type="text"
-                  className="w-full px-4 py-2.5 border rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 focus:outline-none text-sm transition-all"
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 focus:outline-none text-sm transition-all"
                   placeholder="mis. Pembuatan Kanopi Baja Ringan"
                   value={namaProyek}
                   onChange={(e) => setNamaProyek(e.target.value)}
@@ -192,7 +192,7 @@ export default function CreateProjectModal({ onClose, onSuccess }: CreateProject
                 <label className="block mb-1.5 font-bold text-xs text-slate-700">Nama Klien *</label>
                 <input
                   type="text"
-                  className="w-full px-4 py-2.5 border rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 focus:outline-none text-sm transition-all"
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 focus:outline-none text-sm transition-all"
                   placeholder="mis. PT. Indah Jaya / Bpk. Rudi"
                   value={clientName}
                   onChange={(e) => setClientName(e.target.value)}
@@ -204,7 +204,7 @@ export default function CreateProjectModal({ onClose, onSuccess }: CreateProject
                 <label className="block mb-1.5 font-bold text-xs text-slate-700">Nomor Handphone Klien</label>
                 <input
                   type="tel"
-                  className="w-full px-4 py-2.5 border rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 focus:outline-none text-sm transition-all"
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 focus:outline-none text-sm transition-all"
                   placeholder="mis. 08123456789"
                   value={clientPhone}
                   onChange={(e) => setClientPhone(e.target.value)}
@@ -216,7 +216,7 @@ export default function CreateProjectModal({ onClose, onSuccess }: CreateProject
             <div>
               <label className="block mb-1.5 font-bold text-xs text-slate-700">Deskripsi / Spesifikasi Pekerjaan</label>
               <textarea
-                className="w-full px-4 py-2.5 border rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 focus:outline-none text-sm transition-all min-h-[100px]"
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 focus:outline-none text-sm transition-all min-h-[100px]"
                 placeholder="Rincikan dimensi tiang, jenis material, ketebalan, dll..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -227,7 +227,7 @@ export default function CreateProjectModal({ onClose, onSuccess }: CreateProject
             <div>
               <label className="block mb-1.5 font-bold text-xs text-slate-700">Supervisor Proyek (Opsional)</label>
               <select
-                className="w-full px-4 py-2.5 border rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 focus:outline-none text-sm transition-all"
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 focus:outline-none text-sm transition-all"
                 value={selectedSupervisorId}
                 onChange={(e) => setSelectedSupervisorId(e.target.value)}
               >
@@ -245,7 +245,7 @@ export default function CreateProjectModal({ onClose, onSuccess }: CreateProject
                 <label className="block mb-1.5 font-bold text-xs text-slate-700">Tanggal Mulai Target</label>
                 <input
                   type="date"
-                  className="w-full px-4 py-2.5 border rounded-xl bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 focus:outline-none text-sm transition-all"
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 focus:outline-none text-sm transition-all"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
                 />
@@ -254,7 +254,7 @@ export default function CreateProjectModal({ onClose, onSuccess }: CreateProject
                 <label className="block mb-1.5 font-bold text-xs text-slate-700">Tenggat Waktu Pekerjaan</label>
                 <input
                   type="date"
-                  className="w-full px-4 py-2.5 border rounded-xl bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 focus:outline-none text-sm transition-all"
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 focus:outline-none text-sm transition-all"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
                 />
@@ -272,7 +272,7 @@ export default function CreateProjectModal({ onClose, onSuccess }: CreateProject
                 <label className="block mb-1.5 font-bold text-xs text-slate-700">Alamat Proyek *</label>
                 <input
                   type="text"
-                  className="w-full px-4 py-2.5 border rounded-xl bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 focus:outline-none text-sm transition-all"
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 focus:outline-none text-sm transition-all"
                   placeholder="mis. Jl. Merdeka No. 10, Kuta Alam, Banda Aceh"
                   value={projectAddress}
                   onChange={(e) => setProjectAddress(e.target.value)}

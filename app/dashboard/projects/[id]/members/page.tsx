@@ -272,15 +272,12 @@ export default function ProjectMembersPage({ params }: Props) {
 
       {/* ── Modal Tambah Anggota ── */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-xl shadow-2xl border overflow-hidden" style={{ background: C.card, borderColor: C.border }}>
-            {/* Modal header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: C.border }}>
-              <h2 className="font-bold text-base" style={{ color: C.text }}>Tambah Anggota Proyek</h2>
-              <button onClick={() => { setShowModal(false); resetForm(); }}
-                className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors" style={{ color: C.muted }}>
-                <X size={18} />
-              </button>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => { setShowModal(false); resetForm(); }} />
+          <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="px-6 py-4 border-b border-orange-200 flex items-center justify-between">
+              <h2 className="font-bold text-lg text-slate-800">Tambah Anggota Proyek</h2>
+              <button onClick={() => { setShowModal(false); resetForm(); }} className="p-2 hover:bg-orange-50 rounded-full text-orange-400 hover:text-orange-600 transition-colors"><X size={20} /></button>
             </div>
 
             {/* Mode toggle */}

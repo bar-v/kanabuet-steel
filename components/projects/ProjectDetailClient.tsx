@@ -7,13 +7,15 @@ import {
   ArrowLeft, MapPin, CalendarClock, UserCircle2,
   Activity, ChevronRight, Users, Edit2, TrendingUp,
   Package, AlertTriangle, ImageIcon, Plus, Navigation,
-  Search, CheckCircle2, X
+  Search, CheckCircle2, X, Trash2
 } from "lucide-react";
 import type {
   Project, ProjectProgress, ProjectMember, Material, User
 } from "@/lib/types/database";
 import useSWR, { mutate } from "swr";
 import { fetcher } from "@/lib/utils/fetcher";
+import AddMemberModal from "./AddMemberModal";
+import { createClient } from "@/lib/supabase/client";
 
 const DynamicMap = dynamic(() => import("@/components/MapPicker"), { ssr: false });
 
@@ -97,11 +99,23 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
 
   // Modal State
   const [showDocsModal, setShowDocsModal] = useState(false);
+  const [showAddMemberModal, setShowAddMemberModal] = useState(false);
   const [showMaterialModal, setShowMaterialModal] = useState(false);
   const [selectedMaterialId, setSelectedMaterialId] = useState("");
   const [usageQuantity, setUsageQuantity] = useState("");
   const [usageNotes, setUsageNotes] = useState("");
   const [isSubmittingUsage, setIsSubmittingUsage] = useState(false);
+
+  const handleDeleteMember = async (memberId: number, memberName: string) => {
+    if (!confirm(`Hapus "${memberName}" dari proyek ini?`)) return;
+    const supabase = createClient();
+    const { error } = await supabase
+      .from('project_members')
+      .delete()
+      .eq('member_id', memberId);
+    if (error) { alert('Gagal menghapus: ' + error.message); return; }
+    mutate(`/api/projects/${projectId}/members`);
+  };
 
   const handleSubmitUsage = async () => {
     if (!selectedMaterialId || !usageQuantity || Number(usageQuantity) <= 0) return;
@@ -480,10 +494,10 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
               <h2 className="text-xs font-bold uppercase tracking-widest" style={{ color: C.muted }}>Anggota Tim</h2>
               {role === "owner" && (
                 <button
-                  onClick={() => router.push(`/dashboard/projects/${projectId}/members`)}
+                  onClick={() => setShowAddMemberModal(true)}
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-xs font-bold transition-colors"
                 >
-                  <Plus size={13} /> Kelola Anggota
+                  <Plus size={14} /> Tambah Anggota
                 </button>
               )}
             </div>
@@ -492,27 +506,35 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
                 <div className="rounded-xl border p-8 text-center bg-white" style={{ borderColor: C.border }}>
                   <Users size={32} className="mx-auto mb-2 opacity-30" style={{ color: C.muted }} />
                   <p className="text-sm font-medium mb-3" style={{ color: C.muted }}>Belum ada anggota tim.</p>
-                  {role === "owner" && (
-                    <button
-                      onClick={() => router.push(`/dashboard/projects/${projectId}/members`)}
-                      className="px-4 py-2 bg-orange-500 text-white text-sm font-bold rounded-lg hover:bg-orange-600 transition-colors"
-                    >
-                      + Tambah Anggota
-                    </button>
-                  )}
                 </div>
               ) : (
                 members.map((m) => (
-                  <div key={m.member_id} className="rounded-xl border p-4 bg-white flex items-center gap-3" style={{ borderColor: C.border }}>
-                    <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 shrink-0 font-bold text-sm">
+                  <div key={m.member_id} className="rounded-xl border p-4 bg-white flex items-center gap-3 group" style={{ borderColor: C.border }}>
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${m.member_id === -1 ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 text-slate-500'}`}>
                       {m.member_name.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold truncate" style={{ color: C.text }}>{m.member_name}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-bold truncate" style={{ color: C.text }}>{m.member_name}</p>
+                        {m.member_id === -1 && (
+                          <span className="px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 text-[9px] font-black uppercase tracking-wider">
+                            Supervisor
+                          </span>
+                        )}
+                      </div>
                       <p className="text-[11px] font-medium" style={{ color: C.muted }}>{m.project_role}</p>
                     </div>
                     {m.phone_number && (
                       <span className="text-[11px] font-medium shrink-0 bg-slate-50 px-2 py-1 rounded" style={{ color: C.muted }}>{m.phone_number}</span>
+                    )}
+                    {role === "owner" && m.member_id !== -1 && (
+                      <button
+                        onClick={() => handleDeleteMember(m.member_id, m.member_name)}
+                        className="p-1.5 rounded-lg hover:bg-red-50 text-red-500 opacity-0 group-hover:opacity-100 transition-all shrink-0"
+                        title="Hapus anggota"
+                      >
+                        <Trash2 size={15} />
+                      </button>
                     )}
                   </div>
                 ))
@@ -691,6 +713,18 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
             </div>
           </div>
         </div>
+      )}
+
+      {/* ═══════════ MODAL TAMBAH ANGGOTA (OWNER ONLY) ═══════════ */}
+      {showAddMemberModal && role === "owner" && (
+        <AddMemberModal
+          projectId={parseInt(projectId.toString())}
+          onClose={() => setShowAddMemberModal(false)}
+          onSuccess={() => {
+            setShowAddMemberModal(false);
+            mutate(`/api/projects/${projectId}/members`);
+          }}
+        />
       )}
     </div>
   );

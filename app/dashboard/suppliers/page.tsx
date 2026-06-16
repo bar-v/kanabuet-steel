@@ -180,12 +180,12 @@ export default function SupplierManagementPage() {
       {showModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => { setShowModal(false); resetForm(); }} />
-          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden">
-            <div className="px-6 py-4 border-b flex items-center justify-between">
-              <h2 className="font-bold text-lg">{editingSupplier ? "Edit Supplier" : "Tambah Supplier"}</h2>
-              <button onClick={() => { setShowModal(false); resetForm(); }} className="p-2 hover:bg-slate-100 rounded-full text-slate-400"><X size={20} /></button>
+          <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="px-6 py-4 border-b border-orange-200 flex items-center justify-between">
+              <h2 className="font-bold text-lg text-slate-800">{editingSupplier ? "Edit Supplier" : "Tambah Supplier"}</h2>
+              <button onClick={() => { setShowModal(false); resetForm(); }} className="p-2 hover:bg-orange-50 rounded-full text-orange-400 hover:text-orange-600 transition-colors"><X size={20} /></button>
             </div>
-            <form onSubmit={handleSave} className="p-6 space-y-4">
+            <form onSubmit={handleSave} className="flex-1 overflow-y-auto p-6 space-y-4">
               <div>
                 <label className="text-xs font-bold text-slate-700 ml-1">Nama Supplier *</label>
                 <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} required placeholder="mis. PT. Baja Utama"
