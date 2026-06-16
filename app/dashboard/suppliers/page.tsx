@@ -8,13 +8,11 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import type { Supplier } from "@/lib/types/database";
 import DashboardShell from "@/components/layout/DashboardShell";
+import StatCard from "@/components/ui/StatCard";
 import useSWR, { mutate } from "swr";
+import { C } from "@/lib/utils/theme";
 
-const C = {
-  bg: "#F8FAFC", card: "#FFFFFF", border: "#E2E8F0",
-  text: "#0F172A", subtext: "#334155", muted: "#64748B",
-  sidebar: "#F1F5F9",
-};
+
 
 export default function SupplierManagementPage() {
   const supabase = createClient();
@@ -99,17 +97,16 @@ export default function SupplierManagementPage() {
     <DashboardShell title="Manajemen Supplier" subtitle="Kelola data supplier material" headerActions={headerActions}>
       {/* Stats */}
       <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="p-4 rounded-xl border flex items-center gap-4 shadow-sm" style={{ background: C.card, borderColor: C.border }}>
-          <div className="w-10 h-10 rounded-lg bg-orange-50 flex items-center justify-center text-orange-600">
-            <ShoppingCart size={20} />
-          </div>
-          <div>
-            <p className="text-2xl font-black text-orange-600">
-              {isLoading ? <span className="inline-block w-8 h-6 bg-slate-100 rounded animate-pulse" /> : suppliers.length}
-            </p>
-            <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: C.muted }}>Total Supplier</p>
-          </div>
-        </div>
+        <StatCard
+          label="Total Supplier"
+          value={suppliers.length}
+          color="text-orange-600"
+          iconBg="bg-orange-50"
+          Icon={ShoppingCart}
+          isLoading={isLoading}
+          size="sm"
+          layout="row"
+        />
       </section>
 
       {/* Search */}

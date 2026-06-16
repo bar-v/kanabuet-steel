@@ -9,17 +9,8 @@ import {
   Search, AlertTriangle, CheckCircle2
 } from "lucide-react";
 
-// ── Design tokens — light mode ──
-const C = {
-  bg:      "#F8FAFC",
-  card:    "#FFFFFF",
-  border:  "#E2E8F0",
-  text:    "#0F172A",
-  subtext: "#334155",
-  muted:   "#64748B",
-  sidebar: "#F1F5F9",
-  header:  "#FFFFFF",
-};
+import DashboardShell from "@/components/layout/DashboardShell";
+import { C, getStatusStyle, getStatusLabel, getProgressColor } from "@/lib/utils/theme";
 
 // ── Mock data ──────────────────────────────────────────────
 const PROJECT = {
@@ -43,27 +34,10 @@ const AVAILABLE_MATERIALS = [
   { id: 5, name: "Cat Anti Karat (Gray)", stock: 3, unit: "kaleng", min: 10 },
 ];
 
-import DashboardShell from "@/components/layout/DashboardShell";
+
 
 const TABS = ["Overview", "Material"] as const;
 type Tab = typeof TABS[number];
-
-// ── Helpers ───────────────────────────────────────────────
-function statusBadge(s: string) {
-  if (s === "completed")   return "bg-emerald-50 text-emerald-700 border border-emerald-200";
-  if (s === "on_progress") return "bg-orange-50  text-orange-700  border border-orange-200";
-  return "bg-amber-50 text-amber-700 border border-amber-200";
-}
-function statusLabel(s: string) {
-  if (s === "completed") return "Selesai";
-  if (s === "on_progress") return "Aktif";
-  return "Pending";
-}
-function progressColor(pct: number) {
-  if (pct >= 80) return "bg-emerald-500";
-  if (pct >= 50) return "bg-orange-400";
-  return "bg-amber-500";
-}
 
 // ── Component ─────────────────────────────────────────────
 export default function SupervisorProjectDetail() {
@@ -95,8 +69,8 @@ export default function SupervisorProjectDetail() {
                <div className="p-4 space-y-3">
                  <div className="flex items-start justify-between gap-3">
                    <p className="text-sm sm:text-base font-bold leading-tight" style={{ color: C.text }}>{PROJECT.name}</p>
-                   <span className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide ${statusBadge(PROJECT.status)}`}>
-                     {statusLabel(PROJECT.status)}
+                   <span className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide border ${getStatusStyle(PROJECT.status)}`}>
+                     {getStatusLabel(PROJECT.status)}
                    </span>
                  </div>
                  <div className="flex items-center gap-1.5" style={{ color: C.muted }}>

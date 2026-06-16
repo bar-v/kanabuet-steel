@@ -8,6 +8,7 @@ export const C = {
   subtext: "#334155", 
   muted: "#64748B",
   sidebar: "#F1F5F9",
+  header: "#FFFFFF",
 };
 
 export function getStatusStyle(s: string) {

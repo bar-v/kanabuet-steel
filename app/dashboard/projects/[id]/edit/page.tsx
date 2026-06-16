@@ -14,10 +14,7 @@ const DynamicMapPicker = dynamic(() => import("@/components/MapPicker"), {
   loading: () => <div className="h-[250px] w-full bg-slate-100 rounded-lg flex items-center justify-center text-sm text-slate-400">Memuat Peta...</div>,
 });
 
-const C = {
-  bg: "#F8FAFC", card: "#FFFFFF", border: "#E2E8F0",
-  text: "#0F172A", subtext: "#334155", muted: "#64748B",
-};
+import { C } from "@/lib/utils/theme";
 
 const STATUS_OPTIONS: { label: string; value: ProjectStatus }[] = [
   { label: "Menunggu Validasi", value: "menunggu_validasi" },

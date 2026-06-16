@@ -5,9 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { X, Search, UserCircle2 } from "lucide-react";
 import type { WorkerHistoryItem } from "@/lib/types/database";
 
-const C = {
-  bg: "#F8FAFC", card: "#FFFFFF", border: "#E2E8F0", text: "#1E293B", muted: "#64748B", subtext: "#475569"
-};
+import { C } from "@/lib/utils/theme";
 
 interface AddMemberModalProps {
   projectId: number;

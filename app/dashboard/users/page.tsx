@@ -8,17 +8,12 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@/lib/types/database";
 import DashboardShell from "@/components/layout/DashboardShell";
+import StatCard from "@/components/ui/StatCard";
 import useSWR, { mutate } from "swr";
+import { formatDate } from "@/lib/utils/formatters";
+import { C } from "@/lib/utils/theme";
 
-const C = {
-  bg: "#F8FAFC", card: "#FFFFFF", border: "#E2E8F0",
-  text: "#0F172A", subtext: "#334155", muted: "#64748B",
-};
 
-function formatDate(d: string | null | undefined) {
-  if (!d) return "—";
-  return new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
-}
 
 export default function UserManagementPage() {
   const supabase = createClient();
@@ -136,33 +131,36 @@ export default function UserManagementPage() {
     <DashboardShell title="Manajemen Pengguna" subtitle="Kelola akun supervisor sistem" headerActions={headerActions}>
       {/* Stats */}
       <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="p-4 rounded-xl border flex items-center gap-4 shadow-sm" style={{ background: C.card, borderColor: C.border }}>
-          <div className="w-10 h-10 rounded-lg bg-slate-50 flex items-center justify-center text-slate-600"><Users size={20} /></div>
-          <div>
-            <p className="text-2xl font-black text-slate-600">
-              {isLoading ? <span className="inline-block w-8 h-6 bg-slate-100 rounded animate-pulse" /> : users.length}
-            </p>
-            <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: C.muted }}>Total Supervisor</p>
-          </div>
-        </div>
-        <div className="p-4 rounded-xl border flex items-center gap-4 shadow-sm" style={{ background: C.card, borderColor: C.border }}>
-          <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600"><Shield size={20} /></div>
-          <div>
-            <p className="text-2xl font-black text-emerald-600">
-              {isLoading ? <span className="inline-block w-8 h-6 bg-slate-100 rounded animate-pulse" /> : activeCount}
-            </p>
-            <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: C.muted }}>Aktif</p>
-          </div>
-        </div>
-        <div className="p-4 rounded-xl border flex items-center gap-4 shadow-sm" style={{ background: C.card, borderColor: C.border }}>
-          <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center text-red-600"><ShieldOff size={20} /></div>
-          <div>
-            <p className="text-2xl font-black text-red-600">
-              {isLoading ? <span className="inline-block w-8 h-6 bg-slate-100 rounded animate-pulse" /> : inactiveCount}
-            </p>
-            <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: C.muted }}>Nonaktif</p>
-          </div>
-        </div>
+        <StatCard
+          label="Total Supervisor"
+          value={users.length}
+          color="text-slate-600"
+          iconBg="bg-slate-50"
+          Icon={Users}
+          isLoading={isLoading}
+          size="sm"
+          layout="row"
+        />
+        <StatCard
+          label="Aktif"
+          value={activeCount}
+          color="text-emerald-600"
+          iconBg="bg-emerald-50"
+          Icon={Shield}
+          isLoading={isLoading}
+          size="sm"
+          layout="row"
+        />
+        <StatCard
+          label="Nonaktif"
+          value={inactiveCount}
+          color="text-red-600"
+          iconBg="bg-red-50"
+          Icon={ShieldOff}
+          isLoading={isLoading}
+          size="sm"
+          layout="row"
+        />
       </section>
 
       {/* Search */}

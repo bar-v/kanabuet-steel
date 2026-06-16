@@ -10,6 +10,7 @@ interface StatCardProps {
   Icon: LucideIcon;
   isLoading?: boolean;
   size?: "sm" | "md"; // sm for projects/materials, md for dashboard
+  layout?: "col" | "row";
 }
 
 export default function StatCard({
@@ -21,17 +22,21 @@ export default function StatCard({
   Icon,
   isLoading = false,
   size = "sm",
+  layout = "col",
 }: StatCardProps) {
   const isMd = size === "md";
-  const iconSizeClass = isMd ? "w-10 h-10" : "w-9 h-9";
-  const iconPixelSize = isMd ? 20 : 18;
+  const isRow = layout === "row";
+  
+  const iconSizeClass = isMd || isRow ? "w-10 h-10" : "w-9 h-9";
+  const iconPixelSize = isMd || isRow ? 20 : 18;
   const valueClass = isMd ? "text-3xl" : "text-2xl";
-  const labelClass = isMd ? "text-xs mt-0.5 font-semibold" : "text-[11px] font-bold uppercase tracking-wider";
-  const gapClass = isMd ? "gap-3" : "gap-2";
+  const labelClass = isMd && !isRow ? "text-xs mt-0.5 font-semibold" : "text-[11px] font-bold uppercase tracking-wider";
+  
+  const containerFlexClass = isRow ? "flex-row items-center gap-4" : `flex-col ${isMd ? "gap-3" : "gap-2"}`;
 
   return (
     <div
-      className={`p-4 rounded-xl border flex flex-col shadow-sm ${gapClass} ${border ? border : ""} hover:shadow-md transition-shadow`}
+      className={`p-4 rounded-xl border flex shadow-sm ${containerFlexClass} ${border ? border : ""} hover:shadow-md transition-shadow`}
       style={{ background: C.card, borderColor: border ? undefined : C.border }}
     >
       <div className={`${iconSizeClass} rounded-lg flex items-center justify-center ${iconBg} ${color}`}>
