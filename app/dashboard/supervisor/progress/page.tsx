@@ -14,7 +14,6 @@ import { formatDate } from "@/lib/utils/formatters";
 import DashboardShell from "@/components/layout/DashboardShell";
 
 export default function UpdateProgressPage() {
-  const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form state
