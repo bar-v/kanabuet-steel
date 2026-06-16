@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import {
   Plus, Search, X, Users, Edit2, Shield, ShieldOff,
-  Mail, Calendar, Loader2,
+  Mail, Calendar,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@/lib/types/database";
@@ -105,7 +105,6 @@ export default function UserManagementPage() {
   };
 
   const handleToggleActive = async (u: User) => {
-    const action = u.is_active ? "nonaktifkan" : "aktifkan";
     if (!confirm(`${u.is_active ? "Nonaktifkan" : "Aktifkan"} supervisor "${u.fullname}"?`)) return;
     const { error } = await supabase.from("users").update({ is_active: !u.is_active }).eq("user_id", u.user_id);
     if (error) { alert("Gagal: " + error.message); return; }

@@ -1,17 +1,15 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import {
-  ArrowLeft, MapPin, CalendarClock, UserCircle2,
+  MapPin, CalendarClock, UserCircle2,
   Activity, ChevronRight, Users, Edit2, TrendingUp,
   Package, AlertTriangle, ImageIcon, Plus, Navigation,
   Search, CheckCircle2, X, Trash2
 } from "lucide-react";
-import type {
-  Project, ProjectProgress, ProjectMember, Material, User
-} from "@/lib/types/database";
+import type { Project, ProjectMember, Material } from "@/lib/types/database";
 import useSWR, { mutate } from "swr";
 import { fetcher } from "@/lib/utils/fetcher";
 import AddMemberModal from "./AddMemberModal";
@@ -58,9 +56,11 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
 
   const project = projectData?.project as Project | undefined;
   const latestProgress = projectData?.latestProgress as number | undefined ?? 0;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const progressHistory = progressData?.progressHistory as any[] | undefined ?? [];
   const members = membersData?.members as ProjectMember[] | undefined ?? [];
   const materialUsage = usageData?.usage as MaterialUsageItem[] | undefined ?? [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const photos = docsData?.photos as any[] | undefined ?? [];
   const materials = materialsData?.materials as Material[] | undefined ?? [];
 

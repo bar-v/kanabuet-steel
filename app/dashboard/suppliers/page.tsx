@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import {
   Plus, Search, X, ShoppingCart, Edit2, Trash2,
-  Phone, MapPin, Loader2,
+  Phone, MapPin,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Supplier } from "@/lib/types/database";

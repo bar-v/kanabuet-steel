@@ -1,14 +1,12 @@
 "use client";
 
-import Image from "next/image";
-import { useState, useEffect, useCallback } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
-  FolderOpen, LogOut, Menu, X, MapPin, CalendarClock,
-  TrendingUp, Bell, Search,
+  FolderOpen, MapPin, CalendarClock, Search,
 } from "lucide-react";
 import DashboardShell from "@/components/layout/DashboardShell";
-import type { Project, User } from "@/lib/types/database";
+import type { Project } from "@/lib/types/database";
 import useSWR from "swr";
 import { fetcher } from "@/lib/utils/fetcher";
 import { C, getStatusStyle, getStatusLabel, getProgressColor } from "@/lib/utils/theme";

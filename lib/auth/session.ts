@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 const secretKey = process.env.JWT_SECRET || "super_secret_jwt_key_kanabuet";
 const key = new TextEncoder().encode(secretKey);
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function encrypt(payload: any) {
   return await new SignJWT(payload)
     .setProtectedHeader({ alg: "HS256" })
@@ -12,6 +13,7 @@ export async function encrypt(payload: any) {
     .sign(key);
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function decrypt(input: string): Promise<any> {
   const { payload } = await jwtVerify(input, key, {
     algorithms: ["HS256"],
@@ -39,7 +41,7 @@ export async function getSession() {
   if (!session) return null;
   try {
     return await decrypt(session);
-  } catch (error) {
+  } catch {
     return null;
   }
 }

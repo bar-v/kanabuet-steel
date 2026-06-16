@@ -1,15 +1,12 @@
 "use client";
 
-import Image from "next/image";
-import { useState, useEffect, useCallback, useRef } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import imageCompression from "browser-image-compression";
 import {
-  LayoutGrid, FolderOpen, TrendingUp, Package,
-  LogOut, Menu, X, ArrowLeft, MapPin, CalendarClock,
-  Camera, FileText, Bell, Save, ChevronDown, Search,
+  MapPin, CalendarClock, Camera, FileText, Save, ChevronDown, Search, X
 } from "lucide-react";
-import type { Project, ProjectProgress, User } from "@/lib/types/database";
+import type { Project } from "@/lib/types/database";
 import useSWR, { mutate } from "swr";
 import { fetcher } from "@/lib/utils/fetcher";
 import { C, getProgressColor } from "@/lib/utils/theme";
@@ -17,16 +14,16 @@ import { formatDate } from "@/lib/utils/formatters";
 import DashboardShell from "@/components/layout/DashboardShell";
 
 export default function UpdateProgressPage() {
-  const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // SWR data fetching
-  const { data: projectsData, isLoading: projectsLoading } = useSWR('/api/supervisor/projects', fetcher);
-  const projects = (projectsData?.projects as (Project & { latest_progress?: number })[]) || [];
-  const isLoading = projectsLoading;
 
   // Form state
   const [selectedProjectId, setSelectedProjectId] = useState<number | "">(""); 
+
+  // SWR data fetching
+  const { data: projectsData, isLoading: projectsLoading } = useSWR('/api/supervisor/projects', fetcher);
+  const { data: progressData } = useSWR(selectedProjectId ? `/api/supervisor/progress/${selectedProjectId}` : null, fetcher);
+  const projects = (projectsData?.projects as (Project & { latest_progress?: number })[]) || [];
+  const isLoading = projectsLoading;
 
   // Searchable Dropdown States
   const [projectDropdownOpen, setProjectDropdownOpen] = useState(false);

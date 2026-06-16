@@ -32,7 +32,7 @@ export default function AddMemberModal({ projectId, onClose, onSuccess }: AddMem
     const fetchHistory = async () => {
       setIsLoadingHistory(true);
       const { data } = await supabase.from("project_members").select("member_name, phone_number, project_role");
-      let uniqueHistory: WorkerHistoryItem[] = [];
+      const uniqueHistory: WorkerHistoryItem[] = [];
       if (data) {
         const seen = new Set<string>();
         for (const item of data as WorkerHistoryItem[]) {
