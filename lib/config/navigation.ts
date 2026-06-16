@@ -4,7 +4,6 @@ import {
   TrendingUp,
   Package,
   ShoppingCart,
-  BarChart3,
   MapPin,
   ClipboardList,
   Users,

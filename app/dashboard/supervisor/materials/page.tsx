@@ -11,12 +11,9 @@ import DashboardShell from "@/components/layout/DashboardShell";
 import type { Project, Material } from "@/lib/types/database";
 import useSWR, { mutate } from "swr";
 import { fetcher } from "@/lib/utils/fetcher";
+import { C } from "@/lib/utils/theme";
 
-const C = {
-  bg: "#F8FAFC", card: "#FFFFFF", border: "#E2E8F0",
-  text: "#0F172A", subtext: "#334155", muted: "#64748B",
-  sidebar: "#F1F5F9", header: "#FFFFFF",
-};
+
 
 function IconLoader() {
   return (

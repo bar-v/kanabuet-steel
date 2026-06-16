@@ -8,12 +8,7 @@ import { OWNER_NAV, SUPERVISOR_NAV, isNavActive } from "@/lib/config/navigation"
 import type { User } from "@/lib/types/database";
 import { useLogout } from "@/lib/auth/client";
 
-// ── Design tokens ─────────────────────────────────────────────
-const C = {
-  bg: "#F8FAFC", card: "#FFFFFF", border: "#E2E8F0",
-  text: "#0F172A", subtext: "#334155", muted: "#64748B",
-  sidebar: "#F1F5F9", header: "#FFFFFF",
-};
+import { C } from "@/lib/utils/theme";
 
 interface DashboardShellProps {
   children: React.ReactNode;

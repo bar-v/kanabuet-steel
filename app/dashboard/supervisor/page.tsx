@@ -13,39 +13,12 @@ import {
 import type { Project, User, ProjectProgress, ProjectMember } from "@/lib/types/database";
 import useSWR, { mutate } from "swr";
 import { fetcher } from "@/lib/utils/fetcher";
-
-// ── Design tokens ─────────────────────────────────────────────
-const C = {
-  bg: "#F8FAFC", card: "#FFFFFF", border: "#E2E8F0",
-  text: "#0F172A", subtext: "#334155", muted: "#64748B",
-  sidebar: "#F1F5F9", header: "#FFFFFF",
-};
-
+import { C, getStatusStyle, getStatusLabel, getProgressColor } from "@/lib/utils/theme";
+import { formatDate } from "@/lib/utils/formatters";
 import DashboardShell from "@/components/layout/DashboardShell";
 
-// ── Helpers ───────────────────────────────────────────────────
-function statusBadge(s: string) {
-  if (s === "selesai") return "bg-emerald-50 text-emerald-700 border border-emerald-200";
-  if (s === "aktif") return "bg-orange-50  text-orange-700  border border-orange-200";
-  if (s === "menunggu_validasi") return "bg-sky-50 text-sky-700 border border-sky-200";
-  return "bg-amber-50 text-amber-700 border border-amber-200";
-}
-function statusLabel(s: string) {
-  if (s === "selesai") return "Selesai";
-  if (s === "aktif") return "Aktif";
-  if (s === "menunggu_validasi") return "Menunggu Validasi";
-  if (s === "tertunda") return "Tertunda";
-  return s;
-}
-function progressColor(pct: number) {
-  if (pct >= 80) return "bg-emerald-500";
-  if (pct >= 50) return "bg-orange-400";
-  return "bg-amber-500";
-}
-function formatDate(d: string | null | undefined) {
-  if (!d) return "—";
-  return new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
-}
+// ── Design tokens ─────────────────────────────────────────────
+
 
 // GPS State
 type GpsState =
@@ -214,8 +187,8 @@ export default function SupervisorDashboard() {
                   <div className="p-4">
                     <div className="flex items-start justify-between gap-3 mb-3">
                       <p className="text-sm font-bold line-clamp-2" style={{ color: C.text }}>{activeProject.project_name}</p>
-                      <span className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide ${statusBadge(activeProject.status)}`}>
-                        {statusLabel(activeProject.status)}
+                      <span className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide border ${getStatusStyle(activeProject.status)}`}>
+                        {getStatusLabel(activeProject.status)}
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5 mb-3" style={{ color: C.muted }}>
@@ -225,7 +198,7 @@ export default function SupervisorDashboard() {
                     <div className="flex items-center gap-3 mb-1">
                       <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: C.border }}>
                         <div
-                          className={`h-full rounded-full transition-all duration-500 ${progressColor(activeProject.latest_progress ?? 0)}`}
+                          className={`h-full rounded-full transition-all duration-500 ${getProgressColor(activeProject.latest_progress ?? 0)}`}
                           style={{ width: `${activeProject.latest_progress ?? 0}%` }}
                         />
                       </div>

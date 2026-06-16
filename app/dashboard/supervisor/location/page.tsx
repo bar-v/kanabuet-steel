@@ -12,6 +12,8 @@ import DashboardShell from "@/components/layout/DashboardShell";
 import type { Project } from "@/lib/types/database";
 import useSWR, { mutate } from "swr";
 import { fetcher } from "@/lib/utils/fetcher";
+import { C } from "@/lib/utils/theme";
+import { formatDate } from "@/lib/utils/formatters";
 import dynamic from 'next/dynamic';
 
 const MapPicker = dynamic(() => import('@/components/MapPicker'), {
@@ -19,22 +21,7 @@ const MapPicker = dynamic(() => import('@/components/MapPicker'), {
   loading: () => <div className="h-[300px] w-full rounded-lg border border-slate-200 bg-slate-50 animate-pulse flex items-center justify-center text-slate-400"><MapPin size={32} /></div>
 });
 
-function formatDate(d: string | null | undefined) {
-  if (!d) return "—";
-  return new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
-}
 
-// ── Design tokens — light mode ──
-const C = {
-  bg: "#F8FAFC",
-  card: "#FFFFFF",
-  border: "#E2E8F0",
-  text: "#0F172A",
-  subtext: "#334155",
-  muted: "#64748B",
-  sidebar: "#F1F5F9",
-  header: "#FFFFFF",
-};
 
 export default function LocationValidationPage() {
   const router = useRouter();

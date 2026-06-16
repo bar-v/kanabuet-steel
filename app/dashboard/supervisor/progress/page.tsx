@@ -1,47 +1,30 @@
 "use client";
 
-import Image from "next/image";
-import { useState, useEffect, useCallback, useRef } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import imageCompression from "browser-image-compression";
 import {
-  LayoutGrid, FolderOpen, TrendingUp, Package,
-  LogOut, Menu, X, ArrowLeft, MapPin, CalendarClock,
-  Camera, FileText, Bell, Save, ChevronDown, Search,
+  MapPin, CalendarClock, Camera, FileText, Save, ChevronDown, Search, X
 } from "lucide-react";
-import type { Project, ProjectProgress, User } from "@/lib/types/database";
+import type { Project } from "@/lib/types/database";
 import useSWR, { mutate } from "swr";
 import { fetcher } from "@/lib/utils/fetcher";
-
-const C = {
-  bg: "#F8FAFC", card: "#FFFFFF", border: "#E2E8F0",
-  text: "#0F172A", subtext: "#334155", muted: "#64748B",
-  sidebar: "#F1F5F9", header: "#FFFFFF",
-};
-
+import { C, getProgressColor } from "@/lib/utils/theme";
+import { formatDate } from "@/lib/utils/formatters";
 import DashboardShell from "@/components/layout/DashboardShell";
-
-function progressColor(pct: number) {
-  if (pct >= 80) return "bg-emerald-500";
-  if (pct >= 50) return "bg-orange-400";
-  return "bg-amber-500";
-}
-function formatDate(d: string | null | undefined) {
-  if (!d) return "—";
-  return new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
-}
 
 export default function UpdateProgressPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // SWR data fetching
-  const { data: projectsData, isLoading: projectsLoading } = useSWR('/api/supervisor/projects', fetcher);
-  const projects = (projectsData?.projects as (Project & { latest_progress?: number })[]) || [];
-  const isLoading = projectsLoading;
-
   // Form state
   const [selectedProjectId, setSelectedProjectId] = useState<number | "">(""); 
+
+  // SWR data fetching
+  const { data: projectsData, isLoading: projectsLoading } = useSWR('/api/supervisor/projects', fetcher);
+  const { data: progressData } = useSWR(selectedProjectId ? `/api/supervisor/progress/${selectedProjectId}` : null, fetcher);
+  const projects = (projectsData?.projects as (Project & { latest_progress?: number })[]) || [];
+  const isLoading = projectsLoading;
 
   // Searchable Dropdown States
   const [projectDropdownOpen, setProjectDropdownOpen] = useState(false);
@@ -290,7 +273,7 @@ export default function UpdateProgressPage() {
                         <span className="text-sm font-black text-orange-600">{lastPct}%</span>
                       </div>
                       <div className="h-2 rounded-full overflow-hidden" style={{ background: C.border }}>
-                        <div className={`h-full rounded-full ${progressColor(lastPct)}`} style={{ width: `${lastPct}%` }} />
+                        <div className={`h-full rounded-full ${getProgressColor(lastPct)}`} style={{ width: `${lastPct}%` }} />
                       </div>
                       {selectedProject.estimated_finish && (
                         <div className="flex items-center gap-1.5 mt-2" style={{ color: C.muted }}>
@@ -327,7 +310,7 @@ export default function UpdateProgressPage() {
                     </div>
                   </div>
                   <div className="h-2.5 rounded-full overflow-hidden" style={{ background: C.border }}>
-                    <div className={`h-full rounded-full transition-all duration-300 ${progressColor(pct)}`} style={{ width: `${pct}%` }} />
+                    <div className={`h-full rounded-full transition-all duration-300 ${getProgressColor(pct)}`} style={{ width: `${pct}%` }} />
                   </div>
                 </div>
 

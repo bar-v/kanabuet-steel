@@ -1,20 +1,18 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import {
   Plus, Search, X, ShoppingCart, Edit2, Trash2,
-  Phone, MapPin, Loader2,
+  Phone, MapPin,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Supplier } from "@/lib/types/database";
 import DashboardShell from "@/components/layout/DashboardShell";
+import StatCard from "@/components/ui/StatCard";
 import useSWR, { mutate } from "swr";
+import { C } from "@/lib/utils/theme";
 
-const C = {
-  bg: "#F8FAFC", card: "#FFFFFF", border: "#E2E8F0",
-  text: "#0F172A", subtext: "#334155", muted: "#64748B",
-  sidebar: "#F1F5F9",
-};
+
 
 export default function SupplierManagementPage() {
   const supabase = createClient();
@@ -99,17 +97,16 @@ export default function SupplierManagementPage() {
     <DashboardShell title="Manajemen Supplier" subtitle="Kelola data supplier material" headerActions={headerActions}>
       {/* Stats */}
       <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="p-4 rounded-xl border flex items-center gap-4 shadow-sm" style={{ background: C.card, borderColor: C.border }}>
-          <div className="w-10 h-10 rounded-lg bg-orange-50 flex items-center justify-center text-orange-600">
-            <ShoppingCart size={20} />
-          </div>
-          <div>
-            <p className="text-2xl font-black text-orange-600">
-              {isLoading ? <span className="inline-block w-8 h-6 bg-slate-100 rounded animate-pulse" /> : suppliers.length}
-            </p>
-            <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: C.muted }}>Total Supplier</p>
-          </div>
-        </div>
+        <StatCard
+          label="Total Supplier"
+          value={suppliers.length}
+          color="text-orange-600"
+          iconBg="bg-orange-50"
+          Icon={ShoppingCart}
+          isLoading={isLoading}
+          size="sm"
+          layout="row"
+        />
       </section>
 
       {/* Search */}
@@ -135,9 +132,9 @@ export default function SupplierManagementPage() {
               </p>
             </div>
           ) : (
-            <div className="divide-y" style={{ borderColor: C.border }}>
+            <div className="flex flex-col">
               {filtered.map((s) => (
-                <div key={s.supplier_id} className="p-4 flex items-center gap-4 hover:bg-slate-50/50 transition-colors group">
+                <div key={s.supplier_id} className="p-4 border-b flex items-center gap-4 hover:bg-slate-50/50 transition-colors group" style={{ borderColor: C.border }}>
                   <div className="w-11 h-11 rounded-full bg-orange-100 border border-orange-200 flex items-center justify-center text-orange-600 font-bold text-sm shrink-0">
                     {s.supplier_name.charAt(0).toUpperCase()}
                   </div>
@@ -156,7 +153,7 @@ export default function SupplierManagementPage() {
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                  <div className="flex items-center gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity shrink-0">
                     <button onClick={() => openEdit(s)} className="p-1.5 hover:bg-slate-100 text-slate-500 rounded-md" title="Edit">
                       <Edit2 size={14} />
                     </button>

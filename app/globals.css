@@ -8,20 +8,20 @@
 
 @theme inline {
   /* Light mode — ink-saving / print friendly */
-  --color-brand-bg:     #F8FAFC;
-  --color-brand-card:   #FFFFFF;
+  --color-brand-bg: #F8FAFC;
+  --color-brand-card: #FFFFFF;
   --color-brand-border: #E2E8F0;
 
-  --color-brand-primary:   #EA580C;
-  --color-brand-accent:    #F97316;
+  --color-brand-primary: #EA580C;
+  --color-brand-accent: #F97316;
   --color-brand-highlight: #F59E0B;
 
   /* Teks gelap di atas latar terang */
-  --color-brand-text:    #0F172A;
+  --color-brand-text: #0F172A;
   --color-brand-subtext: #334155;
-  --color-brand-muted:   #64748B;
+  --color-brand-muted: #64748B;
 
-  --color-state-danger:  #DC2626;
+  --color-state-danger: #DC2626;
   --color-state-success: #16A34A;
   --color-state-warning: #D97706;
 
@@ -33,7 +33,16 @@
   body {
     background-color: var(--background);
     color: var(--foreground);
+    font-family: var(--font-sans, sans-serif);
     @apply antialiased;
+  }
+
+  input,
+  select,
+  textarea,
+  button,
+  option {
+    font-family: var(--font-sans, sans-serif);
   }
 
   /* Scrollbar override for industrial theme */
@@ -41,13 +50,16 @@
     width: 10px;
     height: 10px;
   }
+
   ::-webkit-scrollbar-track {
     background: #0B0F19;
   }
+
   ::-webkit-scrollbar-thumb {
     background: #2A2F3A;
     border-radius: 5px;
   }
+
   ::-webkit-scrollbar-thumb:hover {
     background: #EA580C;
   }

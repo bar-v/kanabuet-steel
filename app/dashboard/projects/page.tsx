@@ -11,50 +11,11 @@ import { createClient } from "@/lib/supabase/client";
 import type { Project, ProjectProgress, ProjectStatus } from "@/lib/types/database";
 import DashboardShell from "@/components/layout/DashboardShell";
 import CreateProjectModal from "@/components/projects/CreateProjectModal";
+import StatCard from "@/components/ui/StatCard";
 import useSWR, { mutate } from "swr";
+import { formatDate, getLatestProgress } from "@/lib/utils/formatters";
+import { C, getStatusStyle, getStatusLabel, getProgressColor } from "@/lib/utils/theme";
 
-// ── Design tokens ─────────────────────────────────────────────
-const C = {
-  bg: "#F8FAFC", card: "#FFFFFF", border: "#E2E8F0",
-  text: "#0F172A", subtext: "#334155", muted: "#64748B",
-  sidebar: "#F1F5F9",
-};
-
-// ── Helpers ───────────────────────────────────────────────────
-function getStatusStyle(s: string) {
-  switch (s) {
-    case "aktif": return "bg-orange-50 text-orange-700 border-orange-200";
-    case "selesai": return "bg-emerald-50 text-emerald-700 border-emerald-200";
-    case "tertunda": return "bg-amber-50 text-amber-700 border-amber-200";
-    case "menunggu_validasi": return "bg-sky-50 text-sky-700 border-sky-200";
-    default: return "bg-slate-50 text-slate-700 border-slate-200";
-  }
-}
-function getStatusLabel(s: string) {
-  switch (s) {
-    case "aktif": return "Aktif";
-    case "selesai": return "Selesai";
-    case "tertunda": return "Tertunda";
-    case "menunggu_validasi": return "Menunggu Validasi";
-    default: return s;
-  }
-}
-function getProgressColor(pct: number) {
-  if (pct >= 100) return "bg-emerald-500";
-  if (pct >= 50) return "bg-orange-500";
-  return "bg-amber-500";
-}
-function formatDate(d: string | null | undefined) {
-  if (!d) return "—";
-  return new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
-}
-function getLatestProgress(projectId: number, progressList: ProjectProgress[]): number {
-  const records = progressList.filter(p => p.project_id === projectId);
-  if (records.length === 0) return 0;
-  return records.sort((a, b) =>
-    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  )[0].percentage;
-}
 
 const STATUS_FILTERS: { label: string; value: ProjectStatus | "semua" }[] = [
   { label: "Semua", value: "semua" },
@@ -135,17 +96,16 @@ export default function ProjectManagementPage() {
       {/* 1. STATS */}
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map(({ label, value, color, iconBg, Icon }) => (
-          <div key={label} className="p-4 rounded-xl border flex flex-col gap-2 shadow-sm" style={{ background: C.card, borderColor: C.border }}>
-            <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${iconBg} ${color}`}>
-              <Icon size={18} />
-            </div>
-            <div>
-              <p className={`text-2xl font-black ${color}`}>
-                {isLoading ? <span className="inline-block w-8 h-6 bg-slate-100 rounded animate-pulse" /> : value}
-              </p>
-              <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: C.muted }}>{label}</p>
-            </div>
-          </div>
+          <StatCard
+            key={label}
+            label={label}
+            value={value}
+            color={color}
+            iconBg={iconBg}
+            Icon={Icon}
+            isLoading={isLoading}
+            size="sm"
+          />
         ))}
       </section>
 

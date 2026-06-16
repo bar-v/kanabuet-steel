@@ -10,45 +10,12 @@ import { createClient } from "@/lib/supabase/client";
 import type { Project, Material, DashboardStats, ProjectProgress } from "@/lib/types/database";
 import DashboardShell from "@/components/layout/DashboardShell";
 import CreateProjectModal from "@/components/projects/CreateProjectModal";
+import StatCard from "@/components/ui/StatCard";
 import useSWR, { mutate } from "swr";
+import { formatRelativeTime, getLatestProgress } from "@/lib/utils/formatters";
+import { C, getStatusStyle, getStatusLabel, getProgressColor } from "@/lib/utils/theme";
 
-// ── Helpers ───────────────────────────────────────────────────
-function statusBadge(s: string) {
-  if (s === "selesai") return "bg-emerald-50 text-emerald-700 border border-emerald-200";
-  if (s === "aktif") return "bg-orange-50  text-orange-700  border border-orange-200";
-  if (s === "menunggu_validasi") return "bg-sky-50 text-sky-700 border border-sky-200";
-  return "bg-amber-50 text-amber-700 border border-amber-200";
-}
-function statusLabel(s: string) {
-  if (s === "selesai") return "Selesai";
-  if (s === "aktif") return "Aktif";
-  if (s === "menunggu_validasi") return "Menunggu Validasi";
-  if (s === "tertunda") return "Tertunda";
-  return s;
-}
-function progressColor(pct: number) {
-  if (pct >= 80) return "bg-emerald-500";
-  if (pct >= 50) return "bg-orange-400";
-  return "bg-amber-500";
-}
-function formatDate(dateStr: string | null | undefined) {
-  if (!dateStr) return "—";
-  return new Date(dateStr).toLocaleDateString("id-ID", {
-    day: "numeric", month: "short", year: "numeric",
-  });
-}
-function getLatestProgress(projectId: number, progressList: ProjectProgress[]): number {
-  const records = progressList.filter((p) => p.project_id === projectId);
-  if (records.length === 0) return 0;
-  return records.sort(
-    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  )[0].percentage;
-}
 
-const C = {
-  bg: "#F8FAFC", card: "#FFFFFF", border: "#E2E8F0",
-  text: "#0F172A", subtext: "#334155", muted: "#64748B",
-};
 
 // We will define QUICK_ACTIONS inside the component so it can access setShowCreateModal
 // ── Component ─────────────────────────────────────────────────
@@ -98,7 +65,8 @@ export default function OwnerDashboard() {
     low_stock_count: materials.filter(m => m.current_stock < m.minimum_stock).length,
   };
 
-  const recentProjects = projects.slice(0, 5);
+  const recentProjects = projects.slice(0, 3);
+  const recentActivities = progressList.slice(0, 3);
 
   const STATS = [
     { label: "Total Proyek", value: stats.total_projects, color: "text-orange-600", iconBg: "bg-orange-50", border: "border-orange-200", Icon: LayoutGrid },
@@ -123,87 +91,118 @@ export default function OwnerDashboard() {
             <h2 className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: C.muted }}>Ringkasan</h2>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {STATS.map(({ label, value, color, iconBg, border, Icon }) => (
-                <div
+                <StatCard
                   key={label}
-                  className={`flex flex-col gap-3 p-4 rounded-xl border ${border} hover:shadow-lg transition-shadow`}
-                  style={{ background: C.card }}
-                >
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${iconBg} ${color}`}>
-                    <Icon size={20} />
-                  </div>
-                  <div>
-                    <p className={`text-3xl font-black ${color}`}>{value}</p>
-                    <p className="text-xs mt-0.5 font-semibold" style={{ color: C.subtext }}>{label}</p>
-                  </div>
-                </div>
+                  label={label}
+                  value={value}
+                  color={color}
+                  iconBg={iconBg}
+                  border={border}
+                  Icon={Icon}
+                  size="md"
+                />
               ))}
             </div>
           </section>
 
-          {/* 2. PROJECTS */}
-          <section>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xs font-bold uppercase tracking-widest" style={{ color: C.muted }}>
-                Proyek Terbaru
-              </h2>
-              <button
-                className="flex items-center gap-1 text-xs text-orange-600 hover:text-orange-700 font-semibold"
-                onClick={() => router.push("/dashboard/projects")}
-              >
-                Lihat Semua <ChevronRight size={13} />
-              </button>
-            </div>
-            <div className="space-y-3">
-              {recentProjects.length === 0 ? (
-                <div className="rounded-xl border p-8 text-center" style={{ background: C.card, borderColor: C.border }}>
-                  <FolderOpen size={32} className="mx-auto mb-2" style={{ color: C.muted }} />
-                  <p className="text-sm font-medium" style={{ color: C.muted }}>Belum ada proyek. Mulai buat proyek pertama.</p>
-                  <button
-                    onClick={() => setShowCreateModal(true)}
-                    className="mt-3 px-4 py-2 bg-orange-500 text-white text-sm font-bold rounded-lg hover:bg-orange-600 transition-colors"
-                  >
-                    + Buat Proyek
-                  </button>
-                </div>
-              ) : (
-                recentProjects.map((p) => {
-                  const pct = getLatestProgress(p.project_id, progressList);
-                  return (
-                    <div
-                      key={p.project_id}
-                      onClick={() => router.push(`/dashboard/projects/${p.project_id}`)}
-                      className="rounded-xl border p-4 text-left hover:border-orange-300 hover:shadow-sm transition-all duration-150 cursor-pointer"
-                      style={{ background: C.card, borderColor: C.border }}
+          {/* 2. PROJECTS & ACTIVITIES */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <section>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xs font-bold uppercase tracking-widest" style={{ color: C.muted }}>
+                  Ringkasan Progress Proyek
+                </h2>
+                <button
+                  className="flex items-center gap-1 text-xs text-orange-600 hover:text-orange-700 font-semibold"
+                  onClick={() => router.push("/dashboard/projects")}
+                >
+                  Semua <ChevronRight size={13} />
+                </button>
+              </div>
+              <div className="space-y-3">
+                {recentProjects.length === 0 ? (
+                  <div className="rounded-xl border p-8 text-center" style={{ background: C.card, borderColor: C.border }}>
+                    <FolderOpen size={32} className="mx-auto mb-2" style={{ color: C.muted }} />
+                    <p className="text-sm font-medium" style={{ color: C.muted }}>Belum ada proyek.</p>
+                    <button
+                      onClick={() => setShowCreateModal(true)}
+                      className="mt-3 px-4 py-2 bg-orange-500 text-white text-sm font-bold rounded-lg hover:bg-orange-600 transition-colors"
                     >
-                      <div className="flex items-start justify-between gap-3 mb-3">
-                        <p className="text-sm font-bold line-clamp-1" style={{ color: C.text }}>{p.project_name}</p>
-                        <span className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide ${statusBadge(p.status)}`}>
-                          {statusLabel(p.status)}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: C.border }}>
-                          <div
-                            className={`h-full rounded-full transition-all duration-500 ${progressColor(pct)}`}
-                            style={{ width: `${pct}%` }}
-                          />
+                      + Buat Proyek
+                    </button>
+                  </div>
+                ) : (
+                  recentProjects.map((p) => {
+                    const pct = getLatestProgress(p.project_id, progressList);
+                    return (
+                      <div
+                        key={p.project_id}
+                        onClick={() => router.push(`/dashboard/projects/${p.project_id}`)}
+                        className="rounded-xl border p-4 text-left hover:border-orange-300 hover:shadow-sm transition-all duration-150 cursor-pointer"
+                        style={{ background: C.card, borderColor: C.border }}
+                      >
+                        <div className="flex items-start justify-between gap-3 mb-3">
+                          <p className="text-sm font-bold line-clamp-1" style={{ color: C.text }}>{p.project_name}</p>
                         </div>
-                        <span className="text-xs font-bold w-9 text-right" style={{ color: C.subtext }}>{pct}%</span>
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: C.border }}>
+                            <div
+                              className={`h-full rounded-full transition-all duration-500 ${getProgressColor(pct)}`}
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                        </div>
+                        <div className="flex items-end justify-between text-[11px] font-medium" style={{ color: C.muted }}>
+                          <div>
+                            <span className="font-bold block mb-0.5" style={{ color: C.subtext }}>{pct}% Selesai</span>
+                            <span className="font-semibold block">{p.client_name}</span>
+                          </div>
+                          <span>
+                            {p.estimated_finish ? `Tenggat:` : ""}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex items-center justify-between text-[11px] font-medium" style={{ color: C.muted }}>
-                        <span className="flex items-center gap-1">
-                          <UserCircle2 size={12} /> {p.client_name}
-                        </span>
-                        <span>
-                          {p.estimated_finish ? `Tenggat: ${formatDate(p.estimated_finish)}` : formatDate(p.created_at)}
-                        </span>
+                    );
+                  })
+                )}
+              </div>
+            </section>
+
+            <section>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xs font-bold uppercase tracking-widest" style={{ color: C.muted }}>
+                  Aktivitas Terbaru
+                </h2>
+              </div>
+              <div className="space-y-3">
+                {recentActivities.length === 0 ? (
+                  <div className="rounded-xl border p-8 text-center" style={{ background: C.card, borderColor: C.border }}>
+                    <p className="text-sm font-medium" style={{ color: C.muted }}>Belum ada aktivitas.</p>
+                  </div>
+                ) : (
+                  recentActivities.map((act) => {
+                    const project = projects.find(p => p.project_id === act.project_id);
+                    const title = act.percentage === 100 ? "Status diubah ke Selesai" : `Pembaruan Progres ${act.percentage}%`;
+                    return (
+                      <div
+                        key={act.progress_id}
+                        className="rounded-xl border p-4 text-left hover:border-orange-300 hover:shadow-sm transition-all duration-150"
+                        style={{ background: C.card, borderColor: C.border }}
+                      >
+                        <div className="flex items-start justify-between gap-3 mb-2">
+                          <p className="text-sm font-bold" style={{ color: C.text }}>{title}</p>
+                          <span className="text-[10px] font-semibold text-right shrink-0" style={{ color: C.muted }}>{formatRelativeTime(act.created_at)}</span>
+                        </div>
+                        <p className="text-[11px] font-semibold" style={{ color: C.muted }}>
+                          {project?.project_name || "Proyek Tidak Diketahui"} {project?.client_name ? `- ${project.client_name}` : ""}
+                        </p>
                       </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </section>
+                    );
+                  })
+                )}
+              </div>
+            </section>
+          </div>
 
           {/* 3. MATERIAL WARNING */}
           {lowStockMaterials.length > 0 && (

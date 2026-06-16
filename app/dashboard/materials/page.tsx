@@ -10,39 +10,12 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import type { Material, MaterialWithSupplier, Supplier } from "@/lib/types/database";
 import DashboardShell from "@/components/layout/DashboardShell";
+import StatCard from "@/components/ui/StatCard";
 import useSWR, { mutate } from "swr";
+import { formatRupiah } from "@/lib/utils/formatters";
+import { C, getStockStatus, getStockStatusBadge as getStatusBadge, getStockStatusLabel as getStatusLabel } from "@/lib/utils/theme";
 
-const C = {
-  bg: "#F8FAFC", card: "#FFFFFF", border: "#E2E8F0",
-  text: "#0F172A", subtext: "#334155", muted: "#64748B",
-  sidebar: "#F1F5F9",
-};
 
-function getStockStatus(m: Material) {
-  if (m.current_stock <= 0) return "habis";
-  if (m.current_stock < m.minimum_stock) return "min_stock";
-  return "tersedia";
-}
-function getStatusBadge(s: string) {
-  switch (s) {
-    case "tersedia": return "bg-emerald-50 text-emerald-700 border-emerald-200";
-    case "min_stock": return "bg-amber-50 text-amber-700 border-amber-200";
-    case "habis": return "bg-red-50 text-red-700 border-red-200";
-    default: return "bg-slate-50 text-slate-700 border-slate-200";
-  }
-}
-function getStatusLabel(s: string) {
-  switch (s) {
-    case "tersedia": return "Tersedia";
-    case "min_stock": return "Minimum";
-    case "habis": return "Habis";
-    default: return s;
-  }
-}
-
-function formatRupiah(value: number) {
-  return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(value || 0);
-}
 
 const standardUnits = ["batang", "kg", "lembar", "kaleng", "pcs"];
 
@@ -127,7 +100,7 @@ function SupplierSearchSelect({
               }}
               className="w-full px-4 py-2.5 text-left text-xs font-semibold text-slate-500 hover:bg-slate-50 transition-colors"
             >
-              — Tanpa Supplier —
+              Tanpa Supplier
             </button>
             {filteredSuppliers.length === 0 ? (
               <div className="px-4 py-3 text-xs text-slate-400 text-center font-medium">
@@ -446,7 +419,8 @@ export default function MaterialManagementPage() {
           </div>
         </button>
         <button onClick={() => openRestock(null, true)}
-          disabled={!mounted || materials.length === 0}
+          disabled={materials.length === 0}
+          suppressHydrationWarning
           className="group p-4 rounded-xl border flex items-center gap-4 hover:border-emerald-500 hover:shadow-md transition-all duration-200 bg-white disabled:opacity-50"
           style={{ borderColor: C.border }}>
           <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600 group-hover:scale-110 transition-transform">
@@ -462,17 +436,16 @@ export default function MaterialManagementPage() {
       {/* Stats */}
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {STATS.map(({ label, value, color, iconBg, Icon }) => (
-          <div key={label} className="p-4 rounded-xl border flex flex-col gap-2 shadow-sm" style={{ background: C.card, borderColor: C.border }}>
-            <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${iconBg} ${color}`}>
-              <Icon size={18} />
-            </div>
-            <div>
-              <p className={`text-2xl font-black ${color}`}>
-                {isLoading ? <span className="inline-block w-8 h-6 bg-slate-100 rounded animate-pulse" /> : value}
-              </p>
-              <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: C.muted }}>{label}</p>
-            </div>
-          </div>
+          <StatCard
+            key={label}
+            label={label}
+            value={value}
+            color={color}
+            iconBg={iconBg}
+            Icon={Icon}
+            isLoading={isLoading}
+            size="sm"
+          />
         ))}
       </section>
 
@@ -539,11 +512,11 @@ export default function MaterialManagementPage() {
                     <th className="px-5 py-4 text-[11px] font-bold uppercase tracking-wider text-right" style={{ color: C.muted }}>Aksi</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y" style={{ borderColor: C.border }}>
+                <tbody>
                   {filtered.map((m) => {
                     const st = getStockStatus(m);
                     return (
-                      <tr key={m.material_id} className="hover:bg-slate-50/50 transition-colors group">
+                      <tr key={m.material_id} className="border-b hover:bg-slate-50/50 transition-colors group" style={{ borderColor: C.border }}>
                         <td className="px-5 py-4">
                           <p className="text-sm font-bold" style={{ color: C.text }}>{m.material_name}</p>
                           <p className="text-[10px] mt-0.5 font-medium" style={{ color: C.muted }}>
@@ -623,7 +596,7 @@ export default function MaterialManagementPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs font-bold text-slate-700 ml-1">Stok Awal</label>
-                  <input type="number" min="0" value={formStock} onChange={(e) => setFormStock(Number(e.target.value))}
+                  <input type="number" min="1" value={formStock} onChange={(e) => setFormStock(Number(e.target.value))}
                     className="w-full mt-1 px-4 py-2.5 rounded-xl border text-sm font-bold outline-none focus:border-orange-500" style={{ borderColor: C.border }} />
                 </div>
                 <div>
@@ -691,29 +664,29 @@ export default function MaterialManagementPage() {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="flex flex-col gap-3">
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     onClick={() => executeRestock(true)}
                     disabled={isSubmitting}
                     className="w-full py-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-sm shadow-lg shadow-orange-500/20 transition-all disabled:opacity-60"
                   >
                     {isSubmitting ? "Menyimpan..." : "Ya, Perbarui"}
                   </button>
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     onClick={() => executeRestock(false)}
                     disabled={isSubmitting}
                     className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-lg shadow-emerald-600/20 transition-all disabled:opacity-60"
                   >
                     {isSubmitting ? "Menyimpan..." : "Tidak, Simpan Restock Saja"}
                   </button>
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     onClick={() => setShowPriceConfirmation(false)}
                     disabled={isSubmitting}
-                    className="w-full py-3 rounded-xl border font-bold text-sm text-slate-600 hover:bg-slate-100 transition-colors" 
+                    className="w-full py-3 rounded-xl border font-bold text-sm text-slate-600 hover:bg-slate-100 transition-colors"
                     style={{ borderColor: C.border }}
                   >
                     Batal
@@ -787,7 +760,7 @@ export default function MaterialManagementPage() {
                     <p className="text-sm font-medium text-slate-400">Pilih material terlebih dahulu.</p>
                   </div>
                 )}
-                
+
                 <div className="flex gap-3 pt-2">
                   <button type="button" onClick={() => setShowRestockModal(false)}
                     className="flex-1 py-3 rounded-xl border font-bold text-sm text-slate-600 hover:bg-slate-100 transition-colors" style={{ borderColor: C.border }}>Batal</button>

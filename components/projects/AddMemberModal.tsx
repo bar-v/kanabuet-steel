@@ -5,9 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { X, Search, UserCircle2 } from "lucide-react";
 import type { WorkerHistoryItem } from "@/lib/types/database";
 
-const C = {
-  bg: "#F8FAFC", card: "#FFFFFF", border: "#E2E8F0", text: "#1E293B", muted: "#64748B", subtext: "#475569"
-};
+import { C } from "@/lib/utils/theme";
 
 interface AddMemberModalProps {
   projectId: number;
@@ -34,7 +32,7 @@ export default function AddMemberModal({ projectId, onClose, onSuccess }: AddMem
     const fetchHistory = async () => {
       setIsLoadingHistory(true);
       const { data } = await supabase.from("project_members").select("member_name, phone_number, project_role");
-      let uniqueHistory: WorkerHistoryItem[] = [];
+      const uniqueHistory: WorkerHistoryItem[] = [];
       if (data) {
         const seen = new Set<string>();
         for (const item of data as WorkerHistoryItem[]) {

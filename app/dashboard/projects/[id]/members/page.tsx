@@ -10,10 +10,7 @@ import {
 } from 'lucide-react';
 import useSWR, { mutate } from 'swr';
 
-const C = {
-  bg: "#F8FAFC", card: "#FFFFFF", border: "#E2E8F0",
-  text: "#0F172A", subtext: "#334155", muted: "#64748B",
-};
+import { C } from "@/lib/utils/theme";
 
 interface Props {
   params: Promise<{ id: string }>;
