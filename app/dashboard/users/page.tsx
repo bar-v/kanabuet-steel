@@ -77,7 +77,7 @@ export default function UserManagementPage() {
         if (error) throw error;
       } else {
         // Create new supervisor
-        if (!formPassword) { alert("Password wajib diisi untuk supervisor baru."); setIsSubmitting(false); return; }
+        if (!formPassword) { alert("Password wajib diisi untuk pengawas baru."); setIsSubmitting(false); return; }
         const res = await fetch("/api/auth/hash-password", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -105,7 +105,7 @@ export default function UserManagementPage() {
   };
 
   const handleToggleActive = async (u: User) => {
-    if (!confirm(`${u.is_active ? "Nonaktifkan" : "Aktifkan"} supervisor "${u.fullname}"?`)) return;
+    if (!confirm(`${u.is_active ? "Nonaktifkan" : "Aktifkan"} pengawas "${u.fullname}"?`)) return;
     const { error } = await supabase.from("users").update({ is_active: !u.is_active }).eq("user_id", u.user_id);
     if (error) { alert("Gagal: " + error.message); return; }
     mutate('admin_users');
@@ -122,16 +122,16 @@ export default function UserManagementPage() {
   const headerActions = (
     <button onClick={openAdd}
       className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-bold shadow-sm transition-all active:scale-95">
-      <Plus size={16} /> <span className="hidden sm:inline">Tambah Supervisor</span>
+      <Plus size={16} /> <span className="hidden sm:inline">Tambah Pengawas</span>
     </button>
   );
 
   return (
-    <DashboardShell title="Manajemen Pengguna" subtitle="Kelola akun supervisor sistem" headerActions={headerActions}>
+    <DashboardShell title="Manajemen Pengguna" subtitle="Kelola akun pengawas sistem" headerActions={headerActions}>
       {/* Stats */}
       <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard
-          label="Total Supervisor"
+          label="Total Pengawas"
           value={users.length}
           color="text-slate-600"
           iconBg="bg-slate-50"
@@ -165,7 +165,7 @@ export default function UserManagementPage() {
       {/* Search */}
       <div className="relative w-full sm:max-w-xs">
         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: C.muted }} />
-        <input type="text" placeholder="Cari supervisor..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+        <input type="text" placeholder="Cari pengawas..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full pl-10 pr-4 py-2 rounded-lg border text-sm outline-none focus:border-orange-500 transition-colors"
           style={{ borderColor: C.border, background: C.card }} />
       </div>
@@ -179,7 +179,7 @@ export default function UserManagementPage() {
             <div className="p-12 text-center">
               <Users size={40} className="mx-auto mb-3" style={{ color: C.muted }} />
               <p className="text-sm font-semibold" style={{ color: C.muted }}>
-                {searchQuery ? "Tidak ditemukan." : "Belum ada supervisor. Tambahkan yang pertama."}
+                {searchQuery ? "Tidak ditemukan." : "Belum ada pengawas. Tambahkan yang pertama."}
               </p>
             </div>
           ) : (
@@ -230,7 +230,7 @@ export default function UserManagementPage() {
         </div>
         {!isLoading && filtered.length > 0 && (
           <p className="text-xs mt-2 text-right font-medium" style={{ color: C.muted }}>
-            Menampilkan {filtered.length} dari {users.length} supervisor
+            Menampilkan {filtered.length} dari {users.length} pengawas
           </p>
         )}
       </section>
@@ -241,18 +241,18 @@ export default function UserManagementPage() {
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => { setShowModal(false); resetForm(); }} />
           <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
             <div className="px-6 py-4 border-b border-orange-200 flex items-center justify-between">
-              <h2 className="font-bold text-lg text-slate-800">{editingUser ? "Edit Supervisor" : "Tambah Supervisor"}</h2>
+              <h2 className="font-bold text-lg text-slate-800">{editingUser ? "Edit Pengawas" : "Tambah Pengawas"}</h2>
               <button onClick={() => { setShowModal(false); resetForm(); }} className="p-2 hover:bg-orange-50 rounded-full text-orange-400 hover:text-orange-600 transition-colors"><X size={20} /></button>
             </div>
             <form onSubmit={handleSave} className="flex-1 overflow-y-auto p-6 space-y-4">
               <div>
                 <label className="text-xs font-bold text-slate-700 ml-1">Nama Lengkap *</label>
-                <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} required placeholder="mis. Ahmad Supervisor"
+                <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} required placeholder="mis. Ahmad Pengawas"
                   className="w-full mt-1 px-4 py-2.5 rounded-xl border text-sm font-medium outline-none focus:border-orange-500" style={{ borderColor: C.border }} />
               </div>
               <div>
                 <label className="text-xs font-bold text-slate-700 ml-1">Email *</label>
-                <input type="email" value={formEmail} onChange={(e) => setFormEmail(e.target.value)} required placeholder="mis. supervisor@kanabuet.com"
+                <input type="email" value={formEmail} onChange={(e) => setFormEmail(e.target.value)} required placeholder="mis. pengawas@kanabuet.com"
                   className="w-full mt-1 px-4 py-2.5 rounded-xl border text-sm font-medium outline-none focus:border-orange-500" style={{ borderColor: C.border }} />
               </div>
               <div>
@@ -268,7 +268,7 @@ export default function UserManagementPage() {
                   className="flex-1 py-3 rounded-xl border font-bold text-sm text-slate-600 hover:bg-slate-100 transition-colors" style={{ borderColor: C.border }}>Batal</button>
                 <button type="submit" disabled={isSubmitting}
                   className="flex-[2] py-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-sm shadow-lg shadow-orange-500/20 transition-all disabled:opacity-60">
-                  {isSubmitting ? "Menyimpan..." : editingUser ? "Simpan Perubahan" : "Tambah Supervisor"}
+                  {isSubmitting ? "Menyimpan..." : editingUser ? "Simpan Perubahan" : "Tambah Pengawas"}
                 </button>
               </div>
             </form>

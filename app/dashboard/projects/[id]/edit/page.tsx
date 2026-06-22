@@ -9,6 +9,8 @@ import type { Project, ProjectStatus, User } from "@/lib/types/database";
 import DashboardShell from "@/components/layout/DashboardShell";
 import useSWR, { mutate } from "swr";
 
+import { formatAddressFromNominatim } from "@/lib/utils/formatters";
+
 const DynamicMapPicker = dynamic(() => import("@/components/MapPicker"), {
   ssr: false,
   loading: () => <div className="h-[250px] w-full bg-slate-100 rounded-lg flex items-center justify-center text-sm text-slate-400">Memuat Peta...</div>,
@@ -72,8 +74,9 @@ type GpsState =
         try {
           const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
           const data = await response.json();
-          if (data && data.display_name) {
-            setProjectAddress(data.display_name);
+          const maskedAddress = formatAddressFromNominatim(data);
+          if (maskedAddress) {
+            setProjectAddress(maskedAddress);
           }
         } catch (error) {
           console.error("Gagal mendapatkan alamat:", error);
@@ -103,8 +106,9 @@ type GpsState =
     try {
       const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
       const data = await response.json();
-      if (data && data.display_name) {
-        setProjectAddress(data.display_name);
+      const maskedAddress = formatAddressFromNominatim(data);
+      if (maskedAddress) {
+        setProjectAddress(maskedAddress);
       }
     } catch (error) {
       console.error("Gagal mendapatkan alamat:", error);

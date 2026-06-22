@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { createClient } from "@/lib/supabase/client";
 import type { CreateProjectInput, ProjectStatus } from "@/lib/types/database";
 import { X } from "lucide-react";
+import { formatAddressFromNominatim } from "@/lib/utils/formatters";
 
 // Dynamic import for Leaflet map to avoid SSR issues
 const DynamicMapPicker = dynamic(() => import("@/components/MapPicker"), {
@@ -85,8 +86,9 @@ export default function CreateProjectModal({ onClose, onSuccess }: CreateProject
         try {
           const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
           const data = await response.json();
-          if (data && data.display_name) {
-            setProjectAddress(data.display_name);
+          const maskedAddress = formatAddressFromNominatim(data);
+          if (maskedAddress) {
+            setProjectAddress(maskedAddress);
           }
         } catch (error) {
           console.error("Gagal mendapatkan alamat:", error);
@@ -116,8 +118,9 @@ export default function CreateProjectModal({ onClose, onSuccess }: CreateProject
     try {
       const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
       const data = await response.json();
-      if (data && data.display_name) {
-        setProjectAddress(data.display_name);
+      const maskedAddress = formatAddressFromNominatim(data);
+      if (maskedAddress) {
+        setProjectAddress(maskedAddress);
       }
     } catch (error) {
       console.error("Gagal mendapatkan alamat:", error);
@@ -225,7 +228,7 @@ export default function CreateProjectModal({ onClose, onSuccess }: CreateProject
 
             {/* Supervisor */}
             <div>
-              <label className="block mb-1.5 font-bold text-xs text-slate-700">Supervisor Proyek (Opsional)</label>
+              <label className="block mb-1.5 font-bold text-xs text-slate-700">Pengawas Proyek (Opsional)</label>
               <select
                 className="w-full px-4 py-2.5 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 focus:outline-none text-sm transition-all"
                 value={selectedSupervisorId}
@@ -236,7 +239,7 @@ export default function CreateProjectModal({ onClose, onSuccess }: CreateProject
                   <option key={s.user_id} value={s.user_id}>{s.fullname}</option>
                 ))}
               </select>
-              <p className="text-[11px] text-slate-500 mt-1">Jika diisi, proyek akan langsung masuk ke dashboard supervisor tersebut.</p>
+              <p className="text-[11px] text-slate-500 mt-1">Jika diisi, proyek akan langsung masuk ke dashboard pengawas tersebut.</p>
             </div>
 
             {/* Jadwal */}
@@ -338,7 +341,7 @@ export default function CreateProjectModal({ onClose, onSuccess }: CreateProject
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t bg-slate-50 flex justify-end gap-3 rounded-b-2xl sticky bottom-0 z-10">
+        <div className="px-6 py-4 border-t border-orange-200 bg-slate-50 flex justify-end gap-3 rounded-b-2xl sticky bottom-0 z-10">
           <button
             type="button"
             onClick={onClose}

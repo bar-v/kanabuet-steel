@@ -72,32 +72,30 @@ export async function POST(
       return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
 
-    // Jika ada survey_notes atau photo_urls, simpan sebagai progress awal 0%
-    const notesToSave = survey_notes && survey_notes.trim() ? survey_notes.trim() : null;
+    // Simpan sebagai progress awal 0%
+    const notesToSave = survey_notes && survey_notes.trim() ? survey_notes.trim() : "Lokasi Tervalidasi";
     const urlsToSave: string[] = Array.isArray(photo_urls) ? photo_urls : [];
 
-    if (notesToSave || urlsToSave.length > 0) {
-      if (urlsToSave.length > 0) {
-        // Buat multiple row untuk tiap foto
-        const progressRows = urlsToSave.map((url, index) => ({
-          project_id: projectId,
-          recorded_by: user.user_id,
-          percentage: 0,
-          notes: index === 0 ? notesToSave : "Tambahan foto validasi lokasi",
-          photo_url: url,
-          update_date: new Date().toISOString().split("T")[0],
-        }));
-        await supabaseAdmin.from("project_progress").insert(progressRows);
-      } else {
-        // Hanya ada text notes
-        await supabaseAdmin.from("project_progress").insert([{
-          project_id: projectId,
-          recorded_by: user.user_id,
-          percentage: 0,
-          notes: notesToSave,
-          update_date: new Date().toISOString().split("T")[0],
-        }]);
-      }
+    if (urlsToSave.length > 0) {
+      // Buat multiple row untuk tiap foto
+      const progressRows = urlsToSave.map((url, index) => ({
+        project_id: projectId,
+        recorded_by: user.user_id,
+        percentage: 0,
+        notes: index === 0 ? notesToSave : "Tambahan foto validasi lokasi",
+        photo_url: url,
+        update_date: new Date().toISOString().split("T")[0],
+      }));
+      await supabaseAdmin.from("project_progress").insert(progressRows);
+    } else {
+      // Hanya ada text notes
+      await supabaseAdmin.from("project_progress").insert([{
+        project_id: projectId,
+        recorded_by: user.user_id,
+        percentage: 0,
+        notes: notesToSave,
+        update_date: new Date().toISOString().split("T")[0],
+      }]);
     }
 
     return NextResponse.json({ project: updatedProject });

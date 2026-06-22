@@ -28,3 +28,36 @@ export function getLatestProgress(projectId: number, progressList: ProjectProgre
     new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   )[0].percentage;
 }
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function formatAddressFromNominatim(data: any): string {
+  if (!data) return "";
+
+  if (data.address) {
+    const {
+      amenity, building, house_number, road,
+      neighbourhood, suburb, village,
+      city_district, city, town, county
+    } = data.address;
+
+    const parts = [
+      amenity, building, house_number, road,
+      neighbourhood, suburb, village,
+      city_district, city, town, county
+    ].filter(Boolean);
+
+    if (parts.length > 0) {
+      return Array.from(new Set(parts)).join(", ");
+    }
+  }
+
+  if (data.display_name) {
+    const parts = data.display_name.split(",").map((s: string) => s.trim());
+    if (parts.length > 4) {
+      return parts.slice(0, parts.length - 3).join(", ");
+    }
+    return data.display_name;
+  }
+
+  return "";
+}

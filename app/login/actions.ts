@@ -25,7 +25,7 @@ export async function loginAction(formData: FormData) {
 
   // Cek apakah akun aktif
   if (user.is_active === false) {
-    return { error: "Akun Anda telah dinonaktifkan. Hubungi owner." };
+    return { error: "Akun Anda telah dinonaktifkan. Hubungi pemilik." };
   }
 
   // Jika user belum punya password_hash (misal baru migrasi)

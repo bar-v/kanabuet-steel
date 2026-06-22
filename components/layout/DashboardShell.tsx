@@ -36,7 +36,7 @@ export default function DashboardShell({
     fetch("/api/auth/me")
       .then((res) => res.json())
       .then(({ user }) => { if (user) setUser(user); })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   const handleLogout = useLogout();
@@ -103,10 +103,9 @@ export default function DashboardShell({
                   router.push(href);
                 }}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition-all duration-150
-                  ${
-                    active
-                      ? "bg-orange-500/15 text-orange-400 border border-orange-500/25"
-                      : "hover:bg-slate-100 hover:text-slate-900"
+                  ${active
+                    ? "bg-orange-500/15 text-orange-400 border border-orange-500/25"
+                    : "hover:bg-slate-100 hover:text-slate-900"
                   }`}
                 style={!active ? { color: C.subtext } : undefined}
               >
@@ -131,7 +130,7 @@ export default function DashboardShell({
                 {user?.fullname ?? "Memuat..."}
               </p>
               <p className="text-[11px] font-medium capitalize" style={{ color: C.muted }}>
-                {role}
+                {role === "owner" ? "Pemilik" : "Pengawas"}
               </p>
             </div>
           </div>

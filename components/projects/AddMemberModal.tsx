@@ -201,7 +201,7 @@ export default function AddMemberModal({ projectId, onClose, onSuccess }: AddMem
                   </label>
                   <input
                     type="text"
-                    placeholder="mis. Tukang Las, Supervisor, Helper"
+                    placeholder="mis. Tukang Las, Pengawas, Helper"
                     value={newRole}
                     onChange={(e) => setNewRole(e.target.value)}
                     className="w-full px-3 py-2.5 rounded-lg border text-sm outline-none focus:border-orange-500"
@@ -249,7 +249,7 @@ export default function AddMemberModal({ projectId, onClose, onSuccess }: AddMem
                 </label>
                 <input
                   type="text"
-                  placeholder="mis. Tukang Las, Supervisor, Helper"
+                  placeholder="mis. Tukang Las, Pengawas, Helper"
                   value={newRole}
                   onChange={(e) => setNewRole(e.target.value)}
                   className="w-full px-3 py-2.5 rounded-lg border text-sm outline-none focus:border-orange-500"

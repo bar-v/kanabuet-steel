@@ -150,7 +150,7 @@ export default function SupervisorDashboard() {
   const pendingProjects = projects.filter(p => p.status === "menunggu_validasi");
 
   return (
-    <DashboardShell role="supervisor" title="Dashboard Supervisor" subtitle={user?.fullname ?? ""}>
+    <DashboardShell role="supervisor" title="Dashboard Pengawas" subtitle={user?.fullname ?? ""}>
 
           {/* 1. RINGKASAN PROYEK AKTIF */}
           <section>

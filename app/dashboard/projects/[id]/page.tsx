@@ -10,7 +10,7 @@ export default function ProjectDetailPage({ params }: Props) {
   const resolvedParams = use(params);
   
   return (
-    <DashboardShell title="Detail Proyek">
+    <DashboardShell title="Detail Proyek" backUrl="/dashboard/projects">
       <ProjectDetailClient projectId={resolvedParams.id} role="owner" />
     </DashboardShell>
   );

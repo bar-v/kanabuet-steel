@@ -217,7 +217,7 @@ export default function ProjectMembersPage({ params }: Props) {
                   <div className="flex items-center gap-2">
                     <p className="font-bold text-sm text-slate-800">{project.supervisor.fullname}</p>
                     <span className="px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 text-[9px] font-black uppercase tracking-wider border border-orange-200">
-                      Ditugaskan Owner
+                      Ditugaskan Pemilik
                     </span>
                   </div>
                   <div className="flex items-center gap-3 mt-0.5">
@@ -366,7 +366,7 @@ export default function ProjectMembersPage({ params }: Props) {
                       </label>
                       <input
                         type="text"
-                        placeholder="mis. Tukang Las, Supervisor, Helper"
+                        placeholder="mis. Tukang Las, Pengawas, Helper"
                         value={newRole}
                         onChange={(e) => setNewRole(e.target.value)}
                         className="w-full px-3 py-2.5 rounded-lg border text-sm outline-none focus:border-orange-500"
@@ -414,7 +414,7 @@ export default function ProjectMembersPage({ params }: Props) {
                     </label>
                     <input
                       type="text"
-                      placeholder="mis. Tukang Las, Supervisor, Helper"
+                      placeholder="mis. Tukang Las, Pengawas, Helper"
                       value={newRole}
                       onChange={(e) => setNewRole(e.target.value)}
                       className="w-full px-3 py-2.5 rounded-lg border text-sm outline-none focus:border-orange-500"

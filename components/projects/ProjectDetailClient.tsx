@@ -149,6 +149,11 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
     return acc;
   }, {} as Record<string, any[]>);
 
+  const combinedActivities = [
+    ...progressHistory.map(p => ({ id: `p-${p.progress_id}`, type: 'progress', date: p.created_at, data: p })),
+    ...materialUsage.map(m => ({ id: `m-${m.usage_id}`, type: 'material', date: m.created_at, data: m }))
+  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
   return (
     <div className="space-y-5 pb-24 relative">
       {/* 1. Header / Project Info Card */}
@@ -269,23 +274,37 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
                 </button>
               </div>
               <div className="divide-y" style={{ borderColor: C.border }}>
-                {progressHistory.length === 0 ? (
+                {combinedActivities.length === 0 ? (
                   <div className="p-6 text-center">
                     <Activity size={24} className="mx-auto mb-2 opacity-30" style={{ color: C.muted }} />
                     <p className="text-xs font-medium" style={{ color: C.muted }}>Belum ada aktivitas untuk proyek ini.</p>
                   </div>
                 ) : (
-                  progressHistory.slice(0, 3).map((h) => (
-                    <div key={h.progress_id} className="flex items-start gap-3 p-4" style={{ borderColor: C.border }}>
-                      <span className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 bg-orange-50 text-orange-600">
-                        <TrendingUp size={14} />
+                  combinedActivities.slice(0, 3).map((act) => (
+                    <div key={act.id} className="flex items-start gap-3 p-4" style={{ borderColor: C.border }}>
+                      <span className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${act.type === 'progress' ? 'bg-orange-50 text-orange-600' : 'bg-violet-50 text-violet-600'}`}>
+                        {act.type === 'progress' ? <TrendingUp size={14} /> : <Package size={14} />}
                       </span>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
-                          <p className="text-sm font-bold text-orange-600">Pembaruan progres ke {h.percentage}%</p>
-                          <span className="text-[10px] font-medium shrink-0" style={{ color: C.muted }}>{formatDate(h.update_date)}</span>
+                          <p className={`text-sm font-bold ${act.type === 'progress' ? 'text-orange-600' : 'text-violet-600'}`}>
+                            {act.type === 'progress' 
+                              ? `Pembaruan progres ke ${act.data.percentage}%` 
+                              : `Penggunaan Material`}
+                          </p>
+                          <span className="text-[10px] font-medium shrink-0" style={{ color: C.muted }}>
+                            {formatDate(act.type === 'progress' ? act.data.update_date : act.data.usage_date)}
+                          </span>
                         </div>
-                        {h.notes && <p className="text-xs mt-1 leading-snug" style={{ color: C.subtext }}>{h.notes}</p>}
+                        {act.type === 'progress' && act.data.notes && (
+                          <p className="text-xs mt-1 leading-snug" style={{ color: C.subtext }}>{act.data.notes}</p>
+                        )}
+                        {act.type === 'material' && (
+                          <p className="text-xs mt-1 leading-snug" style={{ color: C.subtext }}>
+                            {act.data.quantity} {act.data.materials?.unit || ''} {act.data.materials?.material_name || ''} 
+                            {act.data.notes ? ` - ${act.data.notes}` : ''}
+                          </p>
+                        )}
                       </div>
                     </div>
                   ))
@@ -487,7 +506,7 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
                         <p className="text-sm font-bold truncate" style={{ color: C.text }}>{m.member_name}</p>
                         {m.member_id === -1 && (
                           <span className="px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 text-[9px] font-black uppercase tracking-wider">
-                            Supervisor
+                            Pengawas
                           </span>
                         )}
                       </div>

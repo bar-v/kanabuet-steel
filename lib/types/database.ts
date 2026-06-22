@@ -129,7 +129,6 @@ export interface Restock {
   restock_id: number;
   material_id: number;
   supplier_id: number | null;
-  performed_by: number | null;
   quantity: number;
   date: string;
   purchase_unit_price: number;

@@ -91,10 +91,10 @@ export async function POST(req: Request) {
       );
     }
 
-    // Fetch the current unit price of the material
+    // Fetch the current unit price and details of the material
     const { data: material } = await supabaseAdmin
       .from("materials")
-      .select("unit_price")
+      .select("unit_price, material_name, unit")
       .eq("material_id", parseInt(material_id))
       .single();
 

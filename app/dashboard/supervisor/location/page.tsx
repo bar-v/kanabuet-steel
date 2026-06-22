@@ -212,7 +212,7 @@ export default function LocationValidationPage() {
   const isFormComplete = locationData && surveyNotes.length > 5 && selectedProjectId;
 
   return (
-    <DashboardShell role="supervisor" title="Validasi Lapangan" backUrl="/dashboard/supervisor">
+    <DashboardShell role="supervisor" title="Validasi Lapangan">
 
           {/* Success Overlay */}
           {isSuccess && (

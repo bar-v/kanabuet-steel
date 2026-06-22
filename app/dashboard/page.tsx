@@ -12,7 +12,7 @@ import DashboardShell from "@/components/layout/DashboardShell";
 import CreateProjectModal from "@/components/projects/CreateProjectModal";
 import StatCard from "@/components/ui/StatCard";
 import useSWR, { mutate } from "swr";
-import { formatRelativeTime, getLatestProgress } from "@/lib/utils/formatters";
+import { formatRelativeTime, getLatestProgress, formatDate } from "@/lib/utils/formatters";
 import { C, getStatusStyle, getStatusLabel, getProgressColor } from "@/lib/utils/theme";
 
 
@@ -157,8 +157,13 @@ export default function OwnerDashboard() {
                             <span className="font-bold block mb-0.5" style={{ color: C.subtext }}>{pct}% Selesai</span>
                             <span className="font-semibold block">{p.client_name}</span>
                           </div>
-                          <span>
-                            {p.estimated_finish ? `Tenggat:` : ""}
+                          <span className="text-right">
+                            {p.estimated_finish && (
+                              <>
+                                Tenggat:<br />
+                                <span className="text-amber-600 font-bold">{formatDate(p.estimated_finish)}</span>
+                              </>
+                            )}
                           </span>
                         </div>
                       </div>
@@ -182,7 +187,12 @@ export default function OwnerDashboard() {
                 ) : (
                   recentActivities.map((act) => {
                     const project = projects.find(p => p.project_id === act.project_id);
-                    const title = act.percentage === 100 ? "Status diubah ke Selesai" : `Pembaruan Progres ${act.percentage}%`;
+                    let title = `Pembaruan Progres ${act.percentage}%`;
+                    if (act.percentage === 100) title = "Status diubah ke Selesai";
+                    else if (act.notes === "Lokasi Tervalidasi" || (act.percentage === 0 && act.notes?.toLowerCase().includes("lokasi"))) {
+                      title = "Lokasi Tervalidasi";
+                    }
+                    
                     return (
                       <div
                         key={act.progress_id}
@@ -196,6 +206,9 @@ export default function OwnerDashboard() {
                         <p className="text-[11px] font-semibold" style={{ color: C.muted }}>
                           {project?.project_name || "Proyek Tidak Diketahui"} {project?.client_name ? `- ${project.client_name}` : ""}
                         </p>
+                        {act.notes && act.notes !== "Lokasi Tervalidasi" && (
+                          <p className="text-[11px] mt-1 italic truncate" style={{ color: C.muted }}>&quot;{act.notes}&quot;</p>
+                        )}
                       </div>
                     );
                   })

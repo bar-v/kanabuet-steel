@@ -17,7 +17,7 @@ import { C, getStockStatus, getStockStatusBadge as getStatusBadge, getStockStatu
 
 
 
-const standardUnits = ["batang", "kg", "lembar", "kaleng", "pcs"];
+const standardUnits = ["Batang", "Kg", "Lembar", "Kaleng", "Pcs"];
 
 // Component for searchable supplier dropdown
 function SupplierSearchSelect({

@@ -146,7 +146,7 @@ export default function SupervisorMaterialUsagePage() {
   const selectedMaterial = materials.find(m => m.material_id.toString() === selectedMaterialId);
 
   return (
-    <DashboardShell role="supervisor" title="Catat Penggunaan Material" subtitle="Supervisor Dashboard" backUrl="/dashboard/supervisor">
+    <DashboardShell role="supervisor" title="Catat Penggunaan Material" subtitle="Supervisor Dashboard">
           <div className="max-w-3xl mx-auto space-y-6">
             
             <div className="bg-white border rounded-xl p-6 lg:p-8 shadow-sm relative overflow-hidden" style={{ borderColor: C.border }}>
