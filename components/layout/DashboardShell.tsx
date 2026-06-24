@@ -32,11 +32,51 @@ export default function DashboardShell({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
 
+  const [isAuthorized, setIsAuthorized] = useState(false);
+
   useEffect(() => {
     fetch("/api/auth/me")
       .then((res) => res.json())
-      .then(({ user }) => { if (user) setUser(user); })
-      .catch(() => { });
+      .then(({ user }) => { 
+        if (user) {
+          const isSupervisorRoute = pathname.startsWith('/dashboard/supervisor');
+          
+          if (user.system_role === 'supervisor' && !isSupervisorRoute) {
+            window.location.replace('/dashboard/supervisor');
+            return;
+          } else if (user.system_role === 'owner' && isSupervisorRoute) {
+            window.location.replace('/dashboard');
+            return;
+          }
+
+          setUser(user);
+          setIsAuthorized(true);
+        } else {
+          window.location.replace('/login');
+        }
+      })
+      .catch(() => {
+        window.location.replace('/login');
+      });
+
+    if (process.env.NODE_ENV === "development" && typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        for (let registration of registrations) {
+          registration.unregister();
+        }
+      });
+    }
+
+    // Listen for logout events from other tabs to instantly synchronize session destruction
+    if (typeof window !== "undefined") {
+      const channel = new BroadcastChannel("auth_sync");
+      channel.onmessage = (e) => {
+        if (e.data === "LOGOUT") {
+          window.location.href = "/login";
+        }
+      };
+      return () => channel.close();
+    }
   }, []);
 
   const handleLogout = useLogout();
@@ -46,6 +86,14 @@ export default function DashboardShell({
     : role === "supervisor" ? "SV" : "OW";
 
   const navItems = role === "supervisor" ? SUPERVISOR_NAV : OWNER_NAV;
+
+  if (!isAuthorized) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center" style={{ background: C.bg }}>
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-orange-500 border-t-transparent"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: C.bg, color: C.text }}>
@@ -147,8 +195,8 @@ export default function DashboardShell({
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* TOP HEADER */}
         <header
-          className="sticky top-0 z-20 flex items-center gap-4 px-5 backdrop-blur border-b"
-          style={{ height: 64, background: `${C.header}E6`, borderColor: C.border }}
+          className="sticky top-0 z-20 flex items-center gap-4 px-4 backdrop-blur border-b"
+          style={{ height: 56, background: `${C.header}E6`, borderColor: C.border }}
         >
           <button
             onClick={() => setSidebarOpen(true)}
@@ -191,9 +239,9 @@ export default function DashboardShell({
         </header>
 
         {/* SCROLLABLE CONTENT */}
-        <main className="flex-1 overflow-y-auto p-5 lg:p-7 space-y-7">
+        <main className="flex-1 overflow-y-auto p-4 lg:p-5 space-y-4">
           {children}
-          <div className="h-10 lg:h-4" />
+          <div className="h-6 lg:h-2" />
         </main>
       </div>
     </div>

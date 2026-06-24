@@ -15,6 +15,7 @@ import StatCard from "@/components/ui/StatCard";
 import useSWR, { mutate } from "swr";
 import { formatDate, getLatestProgress } from "@/lib/utils/formatters";
 import { C, getStatusStyle, getStatusLabel, getProgressColor } from "@/lib/utils/theme";
+import { useUI } from "@/contexts/UIContext";
 
 
 const STATUS_FILTERS: { label: string; value: ProjectStatus | "semua" }[] = [
@@ -29,6 +30,7 @@ const STATUS_FILTERS: { label: string; value: ProjectStatus | "semua" }[] = [
 export default function ProjectManagementPage() {
   const router = useRouter();
   const supabase = createClient();
+  const { showToast, showConfirm } = useUI();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<ProjectStatus | "semua">("semua");
   const [deletingId, setDeletingId] = useState<number | null>(null);
@@ -51,15 +53,17 @@ export default function ProjectManagementPage() {
   const progressList = data?.progressList || [];
 
   const handleDelete = async (projectId: number, projectName: string) => {
-    if (!confirm(`Hapus proyek "${projectName}"? Tindakan ini tidak bisa dibatalkan.`)) return;
+    const confirmed = await showConfirm(`Hapus proyek "${projectName}"?`, "Tindakan ini tidak bisa dibatalkan.");
+    if (!confirmed) return;
     setDeletingId(projectId);
     try {
       const { error } = await supabase.from("projects").delete().eq("project_id", projectId);
       if (error) throw error;
       mutate('admin_projects');
       mutate('admin_dashboard_data');
+      showToast(`Proyek ${projectName} berhasil dihapus`, "success");
     } catch (err: unknown) {
-      alert("Gagal menghapus proyek: " + (err instanceof Error ? err.message : String(err)));
+      showToast("Gagal menghapus proyek: " + (err instanceof Error ? err.message : String(err)), "error");
     } finally {
       setDeletingId(null);
     }

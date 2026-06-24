@@ -16,6 +16,7 @@ import { fetcher } from "@/lib/utils/fetcher";
 import { C, getStatusStyle, getStatusLabel, getProgressColor } from "@/lib/utils/theme";
 import { formatDate } from "@/lib/utils/formatters";
 import DashboardShell from "@/components/layout/DashboardShell";
+import { useUI } from "@/contexts/UIContext";
 
 // ── Design tokens ─────────────────────────────────────────────
 
@@ -30,6 +31,7 @@ type GpsState =
 // ── Component ─────────────────────────────────────────────────
 export default function SupervisorDashboard() {
   const router = useRouter();
+  const { showToast } = useUI();
 
   // SWR data fetching
   const { data: authData, isLoading: authLoading } = useSWR('/api/auth/me', fetcher);
@@ -106,16 +108,16 @@ export default function SupervisorDashboard() {
 
       const result = await res.json();
       if (!res.ok) {
-        alert(result.error || "Gagal menyimpan validasi lokasi.");
+        showToast(result.error || "Gagal menyimpan validasi lokasi.", "error");
         return;
       }
 
-      alert("Lokasi proyek berhasil divalidasi! Status proyek kini: Aktif.");
+      showToast("Lokasi proyek berhasil divalidasi! Status proyek kini: Aktif.", "success");
       setGps({ status: "idle" });
       setSelectedValidationProject("");
       mutate('/api/supervisor/projects');
     } catch {
-      alert("Terjadi kesalahan saat menyimpan lokasi.");
+      showToast("Terjadi kesalahan saat menyimpan lokasi.", "error");
     }
   };
 
@@ -135,14 +137,14 @@ export default function SupervisorDashboard() {
 
       const result = await res.json();
       if (!res.ok) {
-        alert(result.error || "Gagal memperbarui lokasi.");
+        showToast(result.error || "Gagal memperbarui lokasi.", "error");
         return;
       }
 
-      alert("Lokasi proyek berhasil diperbarui.");
+      showToast("Lokasi proyek berhasil diperbarui.", "success");
       mutate('/api/supervisor/projects');
     } catch {
-      alert("Terjadi kesalahan saat memperbarui lokasi.");
+      showToast("Terjadi kesalahan saat memperbarui lokasi.", "error");
     }
   };
 

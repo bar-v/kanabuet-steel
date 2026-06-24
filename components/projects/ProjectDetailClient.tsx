@@ -16,6 +16,7 @@ import AddMemberModal from "./AddMemberModal";
 import { createClient } from "@/lib/supabase/client";
 import { formatDate, formatRupiah } from "@/lib/utils/formatters";
 import { C, getStatusStyle, getStatusLabel, getProgressColor } from "@/lib/utils/theme";
+import { useUI } from "@/contexts/UIContext";
 
 const DynamicMap = dynamic(() => import("@/components/MapPicker"), { ssr: false });
 
@@ -30,7 +31,7 @@ interface MaterialUsageItem {
   notes: string | null;
   total_cost: number;
   created_at: string;
-  materials: { material_name: string; unit: string } | null;
+  materials: { material_name: string; unit: string; specification?: string | null } | null;
 }
 
 const TABS = ["Overview", "Progress", "Material", "Tim"] as const;
@@ -43,6 +44,7 @@ interface ProjectDetailClientProps {
 
 export default function ProjectDetailClient({ projectId, role }: ProjectDetailClientProps) {
   const router = useRouter();
+  const { showToast, showConfirm } = useUI();
 
   const [activeTab, setActiveTab] = useState<Tab>("Overview");
 
@@ -76,14 +78,16 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
   const [isSubmittingUsage, setIsSubmittingUsage] = useState(false);
 
   const handleDeleteMember = async (memberId: number, memberName: string) => {
-    if (!confirm(`Hapus "${memberName}" dari proyek ini?`)) return;
+    const confirmed = await showConfirm(`Hapus "${memberName}" dari proyek ini?`, "Tindakan ini tidak bisa dibatalkan.");
+    if (!confirmed) return;
     const supabase = createClient();
     const { error } = await supabase
       .from('project_members')
       .delete()
       .eq('member_id', memberId);
-    if (error) { alert('Gagal menghapus: ' + error.message); return; }
+    if (error) { showToast('Gagal menghapus: ' + error.message, 'error'); return; }
     mutate(`/api/projects/${projectId}/members`);
+    showToast(`Anggota ${memberName} berhasil dihapus`, 'success');
   };
 
   const handleSubmitUsage = async () => {
@@ -104,7 +108,7 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
 
       const result = await res.json();
       if (!res.ok) {
-        alert(result.error || "Gagal mencatat penggunaan.");
+        showToast(result.error || "Gagal mencatat penggunaan.", "error");
         return;
       }
 
@@ -114,8 +118,13 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
       setUsageNotes("");
       mutate(`/api/projects/${projectId}/materials`);
       if (role === "supervisor") mutate('/api/supervisor/materials');
-    } catch {
-      alert("Terjadi kesalahan.");
+      showToast("Berhasil mencatat penggunaan material", "success");
+    } catch (err: unknown) {
+      if (err instanceof TypeError) {
+        showToast("Network Error: Koneksi internet terputus. Data tidak tersimpan, silakan periksa koneksi Anda dan coba lagi.", "error");
+      } else {
+        showToast("Terjadi kesalahan yang tidak diketahui.", "error");
+      }
     } finally {
       setIsSubmittingUsage(false);
     }
@@ -328,14 +337,17 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    {photos.slice(0, 3).map((photo) => (
-                      <div key={photo.progress_id} className="rounded-lg border overflow-hidden relative group" style={{ borderColor: C.border }}>
-                        <img src={photo.photo_url} alt="Dokumentasi" className="w-full h-24 object-cover" />
-                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-2">
-                          <p className="text-[10px] font-bold text-white">{photo.percentage}%</p>
+                    {photos.slice(0, 3).map((photo) => {
+                      const firstPhotoUrl = photo.photo_url ? photo.photo_url.split(",")[0] : "";
+                      return (
+                        <div key={photo.progress_id} className="rounded-lg border overflow-hidden relative group" style={{ borderColor: C.border }}>
+                          <img src={firstPhotoUrl} alt="Dokumentasi" className="w-full h-24 object-cover" />
+                          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-2">
+                            <p className="text-[10px] font-bold text-white">{photo.percentage}%</p>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -391,11 +403,15 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
                         {p.users?.fullname && <p className="text-[10px] mt-2 font-medium" style={{ color: C.muted }}>Dicatat oleh: {p.users.fullname}</p>}
                       </div>
                       {p.photo_url && (
-                        <div className="border-t p-3 bg-slate-50 flex items-start gap-3" style={{ borderColor: C.border }}>
-                          <img src={p.photo_url} alt="Dokumentasi" className="w-16 h-16 rounded-lg object-cover border" style={{ borderColor: C.border }} />
+                        <div className="border-t p-3 bg-slate-50 flex items-start gap-3 flex-col sm:flex-row" style={{ borderColor: C.border }}>
+                          <div className="flex flex-wrap gap-2">
+                            {p.photo_url.split(',').map((url: string, i: number) => (
+                              <img key={i} src={url} alt="Dokumentasi" className="w-16 h-16 rounded-lg object-cover border" style={{ borderColor: C.border }} />
+                            ))}
+                          </div>
                           <div className="flex-1">
-                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Dokumentasi</p>
-                            <a href={p.photo_url} target="_blank" rel="noreferrer" className="text-xs font-bold text-sky-600 hover:underline">
+                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Dokumentasi ({p.photo_url.split(',').length} Foto)</p>
+                            <a href={p.photo_url.split(',')[0]} target="_blank" rel="noreferrer" className="text-xs font-bold text-sky-600 hover:underline">
                               Lihat Foto Penuh
                             </a>
                           </div>
@@ -445,6 +461,7 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-bold truncate" style={{ color: C.text }}>{m.materials?.material_name ?? "—"}</p>
+                        {m.materials?.specification && <p className="text-[10px] font-semibold text-sky-600 truncate mt-0.5">{m.materials.specification}</p>}
                         <p className="text-xs font-medium text-slate-500 mt-0.5">{formatDate(m.usage_date)}</p>
                         {m.notes && <p className="text-[11px] text-slate-400 mt-1 truncate">{m.notes}</p>}
                       </div>
@@ -562,7 +579,7 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
                     <option value="" disabled>Cari atau pilih material...</option>
                     {materials.map(m => (
                       <option key={m.material_id} value={m.material_id} disabled={m.current_stock <= 0}>
-                        {m.material_name} — Sisa: {m.current_stock} {m.unit} {m.current_stock <= 0 ? '(Habis)' : ''}
+                        {m.material_name}{m.specification ? ` - ${m.specification}` : ''} — Sisa: {m.current_stock} {m.unit} {m.current_stock <= 0 ? '(Habis)' : ''}
                       </option>
                     ))}
                   </select>
@@ -678,8 +695,10 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
                       <div className="h-px flex-1 bg-slate-200" />
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                      {(photosInDate as any[]).map((photo) => (
-                        <div key={photo.progress_id} className="group relative rounded-xl overflow-hidden shadow-sm border border-slate-200 bg-white aspect-square">
+                      {(photosInDate as any[])
+                        .flatMap(photo => photo.photo_url ? photo.photo_url.split(',').map((url: string) => ({...photo, photo_url: url})) : [])
+                        .map((photo, i) => (
+                        <div key={`${photo.progress_id}-${i}`} className="group relative rounded-xl overflow-hidden shadow-sm border border-slate-200 bg-white aspect-square">
                           <img src={photo.photo_url} alt="Dokumentasi" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                           <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
                             <span className="text-xs font-black text-white">{photo.percentage}% Progress</span>

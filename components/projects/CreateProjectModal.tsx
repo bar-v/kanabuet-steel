@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { CreateProjectInput, ProjectStatus } from "@/lib/types/database";
 import { X } from "lucide-react";
 import { formatAddressFromNominatim } from "@/lib/utils/formatters";
+import { useUI } from "@/contexts/UIContext";
 
 // Dynamic import for Leaflet map to avoid SSR issues
 const DynamicMapPicker = dynamic(() => import("@/components/MapPicker"), {
@@ -33,6 +34,7 @@ interface CreateProjectModalProps {
 
 export default function CreateProjectModal({ onClose, onSuccess }: CreateProjectModalProps) {
   const supabase = createClient();
+  const { showToast } = useUI();
 
   // Form state
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -150,9 +152,10 @@ export default function CreateProjectModal({ onClose, onSuccess }: CreateProject
       if (error) throw error;
 
       onSuccess();
+      showToast("Berhasil menyimpan proyek", "success");
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : String(error);
-      alert(`Gagal menyimpan proyek: ${msg}`);
+      showToast(`Gagal menyimpan proyek: ${msg}`, "error");
       console.error(error);
     } finally {
       setIsSubmitting(false);

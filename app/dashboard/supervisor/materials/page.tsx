@@ -57,7 +57,8 @@ export default function SupervisorMaterialUsagePage() {
   );
 
   const filteredMaterials = materials.filter(m =>
-    m.material_name.toLowerCase().includes(materialSearchQuery.toLowerCase())
+    m.material_name.toLowerCase().includes(materialSearchQuery.toLowerCase()) ||
+    (m.specification || "").toLowerCase().includes(materialSearchQuery.toLowerCase())
   );
 
   useEffect(() => {
@@ -266,7 +267,7 @@ export default function SupervisorMaterialUsagePage() {
                         style={{ borderColor: C.border }}
                       >
                         <span className={selectedMaterial ? "text-slate-900" : "text-slate-400"}>
-                          {selectedMaterial ? `${selectedMaterial.material_name} (Sisa: ${selectedMaterial.current_stock} ${selectedMaterial.unit})` : "Pilih Material"}
+                          {selectedMaterial ? `${selectedMaterial.material_name}${selectedMaterial.specification ? ' - ' + selectedMaterial.specification : ''} (Sisa: ${selectedMaterial.current_stock} ${selectedMaterial.unit})` : "Pilih Material"}
                         </span>
                         <ChevronDown size={16} className={`text-slate-400 transition-transform duration-200 ${materialDropdownOpen ? "rotate-180" : ""}`} />
                       </button>
@@ -312,8 +313,11 @@ export default function SupervisorMaterialUsagePage() {
                                     }}
                                     className={`w-full px-4 py-2.5 text-left text-sm transition-colors flex items-center justify-between hover:bg-orange-50/30 ${isOutOfStock ? 'opacity-40 cursor-not-allowed bg-slate-50' : ''}`}
                                   >
-                                    <span>{m.material_name}</span>
-                                    <span className="text-xs font-semibold text-slate-500">
+                                    <div className="flex flex-col items-start min-w-0 pr-2">
+                                      <span className="truncate w-full">{m.material_name}</span>
+                                      {m.specification && <span className="text-[10px] text-sky-600 truncate w-full">{m.specification}</span>}
+                                    </div>
+                                    <span className="text-xs font-semibold text-slate-500 shrink-0">
                                       Stok: {m.current_stock} {m.unit} {isOutOfStock ? '(Habis)' : ''}
                                     </span>
                                   </button>

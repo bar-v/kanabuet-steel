@@ -46,3 +46,11 @@ supabase/
 
 .docs/
 .draft/
+
+# linting & formatting
+eslint-report.json
+.eslintcache
+
+# OS generated files
+Thumbs.db
+

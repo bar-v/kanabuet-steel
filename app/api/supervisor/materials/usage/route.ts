@@ -13,7 +13,7 @@ export async function GET(req: Request) {
 
     let query = supabaseAdmin
       .from("material_usage")
-      .select("*, materials:material_id(material_name, unit), projects:project_id(project_name)")
+      .select("*, materials:material_id(material_name, specification, unit), projects:project_id(project_name)")
       .order("created_at", { ascending: false });
 
     if (projectId) {
@@ -94,7 +94,7 @@ export async function POST(req: Request) {
     // Fetch the current unit price and details of the material
     const { data: material } = await supabaseAdmin
       .from("materials")
-      .select("unit_price, material_name, unit")
+      .select("unit_price, material_name, specification, unit")
       .eq("material_id", parseInt(material_id))
       .single();
 
@@ -112,7 +112,7 @@ export async function POST(req: Request) {
         total_cost: totalCost,
         notes: notes?.trim() || null,
       }])
-      .select("*, materials:material_id(material_name, unit)")
+      .select("*, materials:material_id(material_name, specification, unit)")
       .single();
 
     if (error) {

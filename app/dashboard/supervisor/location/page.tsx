@@ -15,6 +15,7 @@ import { fetcher } from "@/lib/utils/fetcher";
 import { C } from "@/lib/utils/theme";
 import { formatDate } from "@/lib/utils/formatters";
 import dynamic from 'next/dynamic';
+import { useUI } from "@/contexts/UIContext";
 
 const MapPicker = dynamic(() => import('@/components/MapPicker'), {
   ssr: false,
@@ -26,6 +27,7 @@ const MapPicker = dynamic(() => import('@/components/MapPicker'), {
 export default function LocationValidationPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { showToast } = useUI();
 
   // SWR data fetching
   const { data: projectsData, isLoading: projectsLoading } = useSWR('/api/supervisor/projects', fetcher);
@@ -101,7 +103,7 @@ export default function LocationValidationPage() {
   // GPS fetch dari perangkat
   const handleGetLocation = () => {
     if (!("geolocation" in navigator)) {
-      alert("Perangkat tidak mendukung GPS.");
+      showToast("Perangkat tidak mendukung GPS.", "error");
       return;
     }
     setIsLocating(true);
@@ -113,7 +115,7 @@ export default function LocationValidationPage() {
         if (initialLocation) {
           const distance = getDistanceInMeters(initialLocation.lat, initialLocation.lng, actualLat, actualLng);
           if (distance > 50) {
-            alert(`Lokasi Anda (${distance.toFixed(1)} meter) berada di luar radius 50 meter dari inisial pin proyek. Silakan mendekat ke lokasi proyek.`);
+            showToast(`Lokasi Anda (${distance.toFixed(1)} meter) berada di luar radius 50 meter dari inisial pin proyek. Silakan mendekat ke lokasi proyek.`, "error");
             setIsLocating(false);
             return;
           }
@@ -126,7 +128,7 @@ export default function LocationValidationPage() {
         setIsLocating(false);
       },
       (err) => {
-        alert(`Gagal mengambil GPS: ${err.message}`);
+        showToast(`Gagal mengambil GPS: ${err.message}`, "error");
         setIsLocating(false);
       },
       { enableHighAccuracy: true, timeout: 10000 }
@@ -187,7 +189,7 @@ export default function LocationValidationPage() {
 
       const result = await res.json();
       if (!res.ok) {
-        alert(result.error || "Gagal memvalidasi lokasi.");
+        showToast(result.error || "Gagal memvalidasi lokasi.", "error");
         setIsSubmitting(false);
         return;
       }
@@ -203,7 +205,7 @@ export default function LocationValidationPage() {
         router.push('/dashboard/supervisor');
       }, 2000);
     } catch {
-      alert("Terjadi kesalahan saat memvalidasi.");
+      showToast("Terjadi kesalahan saat memvalidasi.", "error");
       setIsSubmitting(false);
       setUploadStatus(null);
     }

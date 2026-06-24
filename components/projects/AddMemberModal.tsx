@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { X, Search, UserCircle2 } from "lucide-react";
 import type { WorkerHistoryItem } from "@/lib/types/database";
-
 import { C } from "@/lib/utils/theme";
+import { useUI } from "@/contexts/UIContext";
 
 interface AddMemberModalProps {
   projectId: number;
@@ -15,6 +15,7 @@ interface AddMemberModalProps {
 
 export default function AddMemberModal({ projectId, onClose, onSuccess }: AddMemberModalProps) {
   const supabase = createClient();
+  const { showToast } = useUI();
 
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const [workerHistory, setWorkerHistory] = useState<WorkerHistoryItem[]>([]);
@@ -75,7 +76,7 @@ export default function AddMemberModal({ projectId, onClose, onSuccess }: AddMem
       }
 
       if (!memberName || !projectRole) {
-        alert('Nama dan jabatan wajib diisi.');
+        showToast('Nama dan jabatan wajib diisi.', "error");
         return;
       }
 
@@ -86,8 +87,9 @@ export default function AddMemberModal({ projectId, onClose, onSuccess }: AddMem
       if (error) throw error;
 
       onSuccess();
+      showToast('Berhasil menambah anggota', "success");
     } catch (err: unknown) {
-      alert('Gagal menambah anggota: ' + (err instanceof Error ? err.message : String(err)));
+      showToast('Gagal menambah anggota: ' + (err instanceof Error ? err.message : String(err)), "error");
     } finally {
       setIsSubmitting(false);
     }

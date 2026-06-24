@@ -8,7 +8,7 @@ export interface AuthResult {
 }
 
 /**
- * Validasi session dan role pengguna di API route.
+ * Validasi session dan role user di API route.
  *
  * @param allowedRoles - Role yang diizinkan mengakses endpoint
  * @returns `{ user }` jika valid

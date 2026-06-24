@@ -11,6 +11,7 @@ import {
 import useSWR, { mutate } from 'swr';
 
 import { C } from "@/lib/utils/theme";
+import { useUI } from "@/contexts/UIContext";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -19,6 +20,7 @@ interface Props {
 export default function ProjectMembersPage({ params }: Props) {
   const router = useRouter();
   const supabase = createClient();
+  const { showToast, showConfirm } = useUI();
 
   const [projectId, setProjectId] = useState<number | null>(null);
 
@@ -123,7 +125,7 @@ export default function ProjectMembersPage({ params }: Props) {
       }
 
       if (!memberName || !projectRole) {
-        alert('Nama dan jabatan wajib diisi.');
+        showToast('Nama dan jabatan wajib diisi.', 'error');
         return;
       }
 
@@ -138,21 +140,24 @@ export default function ProjectMembersPage({ params }: Props) {
       mutate(`admin_project_members_${projectId}`);
       setShowModal(false);
       resetForm();
+      showToast('Berhasil menambahkan anggota', 'success');
     } catch (err: unknown) {
-      alert('Gagal menambah anggota: ' + (err instanceof Error ? err.message : String(err)));
+      showToast('Gagal menambah anggota: ' + (err instanceof Error ? err.message : String(err)), 'error');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (memberId: number, memberName: string) => {
-    if (!confirm(`Hapus "${memberName}" dari proyek ini?`)) return;
+    const confirmed = await showConfirm(`Hapus "${memberName}" dari proyek ini?`, "Tindakan ini tidak bisa dibatalkan.");
+    if (!confirmed) return;
     const { error } = await supabase
       .from('project_members')
       .delete()
       .eq('member_id', memberId);
-    if (error) { alert('Gagal menghapus: ' + error.message); return; }
+    if (error) { showToast('Gagal menghapus: ' + error.message, 'error'); return; }
     mutate(`admin_project_members_${projectId}`);
+    showToast(`Berhasil menghapus anggota ${memberName}`, 'success');
   };
 
   const filteredHistory = workerHistory.filter(w =>

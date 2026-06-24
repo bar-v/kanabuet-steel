@@ -89,6 +89,7 @@ export interface Material {
   material_id: number;
   supplier_id: number | null;
   material_name: string;
+  specification: string | null;
   category: string | null;
   unit: string;
   current_stock: number;
@@ -120,7 +121,7 @@ export interface MaterialUsage {
 }
 
 export interface MaterialUsageWithDetails extends MaterialUsage {
-  materials: Pick<Material, 'material_name' | 'unit'> | null;
+  materials: Pick<Material, 'material_name' | 'unit' | 'specification'> | null;
   projects: Pick<Project, 'project_name'> | null;
 }
 
@@ -137,7 +138,7 @@ export interface Restock {
 }
 
 export interface RestockWithDetails extends Restock {
-  materials: Pick<Material, 'material_name' | 'unit'> | null;
+  materials: Pick<Material, 'material_name' | 'unit' | 'specification'> | null;
   suppliers: Pick<Supplier, 'supplier_name'> | null;
 }
 
@@ -181,6 +182,7 @@ export interface CreateSupplierInput {
 export interface CreateMaterialInput {
   supplier_id?: number | null;
   material_name: string;
+  specification?: string;
   category?: string;
   unit: string;
   current_stock?: number;

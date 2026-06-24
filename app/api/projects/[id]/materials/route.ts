@@ -31,7 +31,7 @@ export async function GET(
 
     const { data: usage, error } = await supabaseAdmin
       .from("material_usage")
-      .select("*, materials(material_name, unit), projects(project_name)")
+      .select("*, materials(material_name, specification, unit), projects(project_name)")
       .eq("project_id", projectId)
       .order("usage_date", { ascending: false });
 

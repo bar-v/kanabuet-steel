@@ -11,11 +11,13 @@ import DashboardShell from "@/components/layout/DashboardShell";
 import StatCard from "@/components/ui/StatCard";
 import useSWR, { mutate } from "swr";
 import { C } from "@/lib/utils/theme";
+import { useUI } from "@/contexts/UIContext";
 
 
 
 export default function SupplierManagementPage() {
   const supabase = createClient();
+  const { showToast, showConfirm } = useUI();
   const [searchQuery, setSearchQuery] = useState("");
 
   // Modal
@@ -67,18 +69,21 @@ export default function SupplierManagementPage() {
       setShowModal(false);
       resetForm();
       mutate('admin_suppliers');
+      showToast(`Berhasil menyimpan supplier ${formName}`, "success");
     } catch (err: unknown) {
-      alert("Gagal menyimpan: " + (err instanceof Error ? err.message : String(err)));
+      showToast("Gagal menyimpan: " + (err instanceof Error ? err.message : String(err)), "error");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (s: Supplier) => {
-    if (!confirm(`Hapus supplier "${s.supplier_name}"?`)) return;
+    const confirmed = await showConfirm(`Hapus supplier "${s.supplier_name}"?`, "Tindakan ini tidak bisa dibatalkan.");
+    if (!confirmed) return;
     const { error } = await supabase.from("suppliers").delete().eq("supplier_id", s.supplier_id);
-    if (error) { alert("Gagal menghapus: " + error.message); return; }
+    if (error) { showToast("Gagal menghapus: " + error.message, "error"); return; }
     mutate('admin_suppliers');
+    showToast(`Supplier ${s.supplier_name} berhasil dihapus`, "success");
   };
 
   const filtered = suppliers.filter((s) =>

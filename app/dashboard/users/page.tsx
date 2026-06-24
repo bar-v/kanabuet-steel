@@ -3,7 +3,7 @@
 import { useState } from "react";
 import {
   Plus, Search, X, Users, Edit2, Shield, ShieldOff,
-  Mail, Calendar,
+  Mail, Calendar, Eye, EyeOff, AlertCircle
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@/lib/types/database";
@@ -12,17 +12,21 @@ import StatCard from "@/components/ui/StatCard";
 import useSWR, { mutate } from "swr";
 import { formatDate } from "@/lib/utils/formatters";
 import { C } from "@/lib/utils/theme";
+import { useUI } from "@/contexts/UIContext";
 
 
 
 export default function UserManagementPage() {
   const supabase = createClient();
+  const { showToast, showConfirm } = useUI();
   const [searchQuery, setSearchQuery] = useState("");
 
   // Modal
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   // Form
   const [formName, setFormName] = useState("");
@@ -42,7 +46,14 @@ export default function UserManagementPage() {
   const { data: usersData, isLoading } = useSWR('admin_users', fetchUsersData);
   const users = usersData || [];
 
-  const resetForm = () => { setFormName(""); setFormEmail(""); setFormPassword(""); setEditingUser(null); };
+  const resetForm = () => {
+    setFormName("");
+    setFormEmail("");
+    setFormPassword("");
+    setEditingUser(null);
+    setErrorMessage("");
+    setShowPassword(false);
+  };
 
   const openAdd = () => { resetForm(); setShowModal(true); };
   const openEdit = (u: User) => {
@@ -56,7 +67,37 @@ export default function UserManagementPage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setErrorMessage("");
+
     try {
+      // Custom validations for Email and Password (human errors)
+      if (!formEmail.includes("@")) {
+        setErrorMessage("Email tidak valid: harus mengandung karakter '@'.");
+        setIsSubmitting(false);
+        return;
+      }
+      if (formEmail.includes(" ")) {
+        setErrorMessage("Email tidak valid: tidak boleh mengandung spasi.");
+        setIsSubmitting(false);
+        return;
+      }
+      if (!formEmail.match(/\.[a-zA-Z]{2,}$/)) {
+        setErrorMessage("Email tidak valid: sepertinya Anda lupa menambahkan ekstensi domain (mis. '.com' atau '.id').");
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (!editingUser && !formPassword) {
+        setErrorMessage("Password wajib diisi untuk pengawas baru.");
+        setIsSubmitting(false);
+        return;
+      }
+      if (formPassword && formPassword.length < 6) {
+        setErrorMessage("Password minimal terdiri dari 6 karakter.");
+        setIsSubmitting(false);
+        return;
+      }
+
       if (editingUser) {
         // Update user
         const payload: Record<string, unknown> = {
@@ -77,7 +118,6 @@ export default function UserManagementPage() {
         if (error) throw error;
       } else {
         // Create new supervisor
-        if (!formPassword) { alert("Password wajib diisi untuk pengawas baru."); setIsSubmitting(false); return; }
         const res = await fetch("/api/auth/hash-password", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -97,18 +137,25 @@ export default function UserManagementPage() {
       setShowModal(false);
       resetForm();
       mutate('admin_users');
-    } catch (err: unknown) {
-      alert("Gagal menyimpan: " + (err instanceof Error ? err.message : String(err)));
+    } catch (err: any) {
+      if (err?.code === "23505") {
+        setErrorMessage("Gagal menyimpan: Email ini sudah terdaftar. Silakan gunakan alamat email lain.");
+      } else {
+        setErrorMessage("Gagal menyimpan: " + (err?.message || String(err)));
+      }
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleToggleActive = async (u: User) => {
-    if (!confirm(`${u.is_active ? "Nonaktifkan" : "Aktifkan"} pengawas "${u.fullname}"?`)) return;
+    const action = u.is_active ? "Nonaktifkan" : "Aktifkan";
+    const confirmed = await showConfirm(`${action} pengawas`, `Apakah Anda yakin ingin ${action.toLowerCase()} pengawas "${u.fullname}"?`);
+    if (!confirmed) return;
     const { error } = await supabase.from("users").update({ is_active: !u.is_active }).eq("user_id", u.user_id);
-    if (error) { alert("Gagal: " + error.message); return; }
+    if (error) { showToast("Gagal: " + error.message, "error"); return; }
     mutate('admin_users');
+    showToast(`Berhasil ${action.toLowerCase()} pengawas ${u.fullname}`, "success");
   };
 
   const filtered = users.filter((u) =>
@@ -127,7 +174,7 @@ export default function UserManagementPage() {
   );
 
   return (
-    <DashboardShell title="Manajemen Pengguna" subtitle="Kelola akun pengawas sistem" headerActions={headerActions}>
+    <DashboardShell title="Manajemen Pengawas" subtitle="Kelola akun pengawas sistem" headerActions={headerActions}>
       {/* Stats */}
       <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard
@@ -186,21 +233,19 @@ export default function UserManagementPage() {
             <div className="flex flex-col">
               {filtered.map((u) => (
                 <div key={u.user_id} className={`p-4 flex items-center gap-4 border-b hover:bg-slate-50/50 transition-colors group ${!u.is_active ? "opacity-60" : ""}`} style={{ borderColor: C.border }}>
-                  <div className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-sm shrink-0 border ${
-                    u.is_active
+                  <div className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-sm shrink-0 border ${u.is_active
                       ? "bg-orange-100 border-orange-200 text-orange-600"
                       : "bg-slate-100 border-slate-200 text-slate-400"
-                  }`}>
+                    }`}>
                     {u.fullname.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-bold" style={{ color: C.text }}>{u.fullname}</p>
-                      <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase border ${
-                        u.is_active
+                      <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase border ${u.is_active
                           ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                           : "bg-red-50 text-red-700 border-red-200"
-                      }`}>
+                        }`}>
                         {u.is_active ? "Aktif" : "Nonaktif"}
                       </span>
                     </div>
@@ -245,6 +290,14 @@ export default function UserManagementPage() {
               <button onClick={() => { setShowModal(false); resetForm(); }} className="p-2 hover:bg-orange-50 rounded-full text-orange-400 hover:text-orange-600 transition-colors"><X size={20} /></button>
             </div>
             <form onSubmit={handleSave} className="flex-1 overflow-y-auto p-6 space-y-4">
+              {errorMessage && (
+                <div className="p-3 rounded-lg bg-red-50 border border-red-200 flex items-start gap-2.5">
+                  <AlertCircle size={16} className="text-red-600 mt-0.5 shrink-0" />
+                  <p className="text-xs font-medium text-red-700 leading-relaxed">
+                    {errorMessage}
+                  </p>
+                </div>
+              )}
               <div>
                 <label className="text-xs font-bold text-slate-700 ml-1">Nama Lengkap *</label>
                 <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} required placeholder="mis. Ahmad Pengawas"
@@ -259,9 +312,18 @@ export default function UserManagementPage() {
                 <label className="text-xs font-bold text-slate-700 ml-1">
                   Password {editingUser ? "(kosongkan jika tidak diubah)" : "*"}
                 </label>
-                <input type="password" value={formPassword} onChange={(e) => setFormPassword(e.target.value)}
-                  required={!editingUser} placeholder="Minimal 6 karakter"
-                  className="w-full mt-1 px-4 py-2.5 rounded-xl border text-sm font-medium outline-none focus:border-orange-500" style={{ borderColor: C.border }} />
+                <div className="relative mt-1">
+                  <input type={showPassword ? "text" : "password"} value={formPassword} onChange={(e) => setFormPassword(e.target.value)}
+                    required={!editingUser} placeholder="Minimal 6 karakter"
+                    className="w-full px-4 py-2.5 rounded-xl border text-sm font-medium outline-none focus:border-orange-500 pr-10" style={{ borderColor: C.border }} />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => { setShowModal(false); resetForm(); }}

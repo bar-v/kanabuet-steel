@@ -241,9 +241,12 @@ export default function OwnerDashboard() {
                     : 0;
                   return (
                     <div key={m.material_id} className="rounded-xl p-4 border border-amber-500/35" style={{ background: C.card }}>
-                      <div className="flex items-center justify-between mb-3">
-                        <p className="text-sm font-bold" style={{ color: C.text }}>{m.material_name}</p>
-                        <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 uppercase">
+                      <div className="flex items-start justify-between mb-3 gap-2">
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold truncate" style={{ color: C.text }}>{m.material_name}</p>
+                          {m.specification && <p className="text-[10px] font-semibold text-sky-600 truncate mt-0.5">{m.specification}</p>}
+                        </div>
+                        <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 uppercase shrink-0">
                           <AlertTriangle size={9} /> Minimum
                         </span>
                       </div>

@@ -22,7 +22,7 @@ export const OWNER_NAV: NavItem[] = [
   { label: "Material", Icon: Package, href: "/dashboard/materials", matchPatterns: ["/dashboard/materials"] },
   { label: "Supplier", Icon: ShoppingCart, href: "/dashboard/suppliers", matchPatterns: ["/dashboard/suppliers"] },
 
-  { label: "Pengguna", Icon: Users, href: "/dashboard/users", matchPatterns: ["/dashboard/users"] },
+  { label: "Pengawas", Icon: Users, href: "/dashboard/users", matchPatterns: ["/dashboard/users"] },
 ];
 
 export const SUPERVISOR_NAV: NavItem[] = [

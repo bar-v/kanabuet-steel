@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import imageCompression from "browser-image-compression";
 import {
-  MapPin, CalendarClock, Camera, FileText, Save, ChevronDown, Search, X
+  MapPin, CalendarClock, Camera, FileText, Save, ChevronDown, Search, X, Plus
 } from "lucide-react";
 import type { Project } from "@/lib/types/database";
 import useSWR, { mutate } from "swr";
@@ -12,17 +12,18 @@ import { fetcher } from "@/lib/utils/fetcher";
 import { C, getProgressColor } from "@/lib/utils/theme";
 import { formatDate } from "@/lib/utils/formatters";
 import DashboardShell from "@/components/layout/DashboardShell";
+import { useUI } from "@/contexts/UIContext";
 
 export default function UpdateProgressPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { showToast } = useUI();
 
   // Form state
   const [selectedProjectId, setSelectedProjectId] = useState<number | "">("");
 
   // SWR data fetching
   const { data: projectsData, isLoading: projectsLoading } = useSWR('/api/supervisor/projects', fetcher);
-  const { data: progressData } = useSWR(selectedProjectId ? `/api/supervisor/progress/${selectedProjectId}` : null, fetcher);
   const projects = (projectsData?.projects as (Project & { latest_progress?: number })[]) || [];
   const isLoading = projectsLoading;
 
@@ -51,11 +52,13 @@ export default function UpdateProgressPage() {
 
   const [pct, setPct] = useState(0);
   const [notes, setNotes] = useState("");
-  const [updateDate, setUpdateDate] = useState(new Date().toISOString().split("T")[0]);
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [updateDate, setUpdateDate] = useState("");
+  useEffect(() => {
+    setUpdateDate(new Date().toISOString().split("T")[0]);
+  }, []);
+  const [photoFiles, setPhotoFiles] = useState<File[]>([]);
+  const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
 
 
@@ -82,30 +85,46 @@ export default function UpdateProgressPage() {
   const [isCompressing, setIsCompressing] = useState(false);
 
   const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
 
-    // Set preview immediately (optional, or wait for compression)
-    setPhotoPreview(URL.createObjectURL(file));
+    // Tambahkan preview sementara
+    const newPreviews = files.map(file => URL.createObjectURL(file));
+    setPhotoPreviews(prev => [...prev, ...newPreviews]);
 
     setIsCompressing(true);
     try {
       const options = {
         maxSizeMB: 1,
         maxWidthOrHeight: 1920,
-        useWebWorker: true,
+        useWebWorker: false,
       };
 
-      const compressedFile = await imageCompression(file, options);
-      // Create a new File object from the Blob returned by imageCompression to retain the original filename
-      const finalFile = new File([compressedFile], file.name, { type: compressedFile.type });
+      const compressedFiles = await Promise.all(
+        files.map(async (file) => {
+          try {
+            const compressed = await imageCompression(file, options);
+            return new File([compressed], file.name, { type: compressed.type });
+          } catch (err) {
+            console.error("Gagal mengompres gambar:", file.name, err);
+            return file; // Fallback original
+          }
+        })
+      );
 
-      setPhotoFile(finalFile);
-      setPhotoPreview(URL.createObjectURL(finalFile));
+      setPhotoFiles(prev => [...prev, ...compressedFiles]);
+      // Update preview dengan file yg sudah dikompresi (opsional, tp kita timpa saja)
+      setPhotoPreviews(prev => {
+        // ganti n element terakhir dgn url baru
+        const copy = [...prev];
+        const startIdx = copy.length - files.length;
+        compressedFiles.forEach((cf, i) => {
+          copy[startIdx + i] = URL.createObjectURL(cf);
+        });
+        return copy;
+      });
     } catch (error) {
-      console.error("Gagal mengompres gambar:", error);
-      // Fallback ke file original jika kompresi gagal
-      setPhotoFile(file);
+      console.error("Error saat memproses gambar:", error);
     } finally {
       setIsCompressing(false);
     }
@@ -113,30 +132,49 @@ export default function UpdateProgressPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedProjectId) { alert("Pilih proyek terlebih dahulu."); return; }
+    if (!selectedProjectId) { showToast("Pilih proyek terlebih dahulu.", "error"); return; }
+
+    const selectedProject = projects.find(p => p.project_id === Number(selectedProjectId));
+    const currentLastPct = selectedProject?.latest_progress ?? 0;
+
+    if (pct < currentLastPct) {
+      showToast(`Progress tidak boleh mundur atau lebih kecil dari progress sebelumnya (${currentLastPct}%).`, "error");
+      return;
+    }
+
+    if (photoFiles.length === 0) {
+      showToast("Setiap update progress wajib melampirkan minimal 1 foto bukti fisik.", "error");
+      return;
+    }
+
     setIsSubmitting(true);
-    setSuccessMsg(null);
 
     try {
       let photoUrl: string | null = null;
+      const uploadedUrls: string[] = [];
 
       // Upload foto via API jika ada
-      if (photoFile) {
-        const formData = new FormData();
-        formData.append("file", photoFile);
-        formData.append("project_id", String(selectedProjectId));
+      if (photoFiles.length > 0) {
+        for (const file of photoFiles) {
+          const formData = new FormData();
+          formData.append("file", file);
+          formData.append("project_id", String(selectedProjectId));
 
-        const uploadRes = await fetch('/api/supervisor/upload', {
-          method: "POST",
-          body: formData,
-        });
+          const uploadRes = await fetch('/api/supervisor/upload', {
+            method: "POST",
+            body: formData,
+          });
 
-        if (uploadRes.ok) {
-          const { url } = await uploadRes.json();
-          photoUrl = url;
-        } else {
-          const errData = await uploadRes.json().catch(() => ({ error: "Unknown error" }));
-          throw new Error(`Upload foto gagal: ${errData.error || uploadRes.statusText}`);
+          if (uploadRes.ok) {
+            const { url } = await uploadRes.json();
+            uploadedUrls.push(url);
+          } else {
+            const errData = await uploadRes.json().catch(() => ({ error: "Unknown error" }));
+            throw new Error(`Upload foto gagal: ${errData.error || uploadRes.statusText}`);
+          }
+        }
+        if (uploadedUrls.length > 0) {
+          photoUrl = uploadedUrls.join(",");
         }
       }
 
@@ -159,17 +197,17 @@ export default function UpdateProgressPage() {
       }
 
       // Reset form
-      setSuccessMsg("Progress berhasil disimpan!");
+      showToast("Progress berhasil disimpan!", "success");
       setNotes("");
-      setPhotoFile(null);
-      setPhotoPreview(null);
+      setPhotoFiles([]);
+      setPhotoPreviews([]);
       if (fileInputRef.current) fileInputRef.current.value = "";
 
       // Refresh data
       mutate('/api/supervisor/projects');
       mutate('/api/supervisor/progress');
     } catch (err: unknown) {
-      alert("Gagal menyimpan progress: " + (err instanceof Error ? err.message : String(err)));
+      showToast("Gagal menyimpan progress: " + (err instanceof Error ? err.message : String(err)), "error");
     } finally {
       setIsSubmitting(false);
     }
@@ -180,14 +218,6 @@ export default function UpdateProgressPage() {
 
   return (
     <DashboardShell role="supervisor" title="Update Progress" subtitle="Perbarui progres pekerjaan proyek">
-
-      {/* Success message */}
-      {successMsg && (
-        <div className="px-4 py-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-medium flex items-center gap-2">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12" /></svg>
-          {successMsg}
-        </div>
-      )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
 
@@ -348,22 +378,37 @@ export default function UpdateProgressPage() {
 
         {/* 3. Upload Foto */}
         <section>
-          <h2 className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: C.muted }}>Dokumentasi Foto</h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-xs font-bold uppercase tracking-widest" style={{ color: C.muted }}>Dokumentasi Foto</h2>
+            {photoPreviews.length > 0 && (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="text-xs font-bold text-orange-500 hover:text-orange-600 flex items-center gap-1"
+              >
+                <Plus size={14} /> Tambah Foto
+              </button>
+            )}
+          </div>
           <div className="rounded-xl border p-4" style={{ background: C.card, borderColor: C.border }}>
-            {photoPreview ? (
-              <div className="space-y-3">
-                <div className="relative rounded-lg overflow-hidden border" style={{ borderColor: C.border }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={photoPreview} alt="Preview" className="w-full max-h-48 object-cover" />
-                  <button
-                    type="button"
-                    onClick={() => { setPhotoFile(null); setPhotoPreview(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}
-                    className="absolute top-2 right-2 p-1.5 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-                <p className="text-[10px] text-center font-medium" style={{ color: C.muted }}>{photoFile?.name}</p>
+            {photoPreviews.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {photoPreviews.map((preview, idx) => (
+                  <div key={idx} className="relative rounded-lg overflow-hidden border aspect-square" style={{ borderColor: C.border }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={preview} alt={`Preview ${idx + 1}`} className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPhotoPreviews(prev => prev.filter((_, i) => i !== idx));
+                        setPhotoFiles(prev => prev.filter((_, i) => i !== idx));
+                      }}
+                      className="absolute top-1 right-1 p-1.5 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                ))}
               </div>
             ) : (
               <button
@@ -373,15 +418,15 @@ export default function UpdateProgressPage() {
                 style={{ borderColor: C.border }}
               >
                 <Camera size={28} style={{ color: C.muted }} />
-                <p className="text-sm font-semibold" style={{ color: C.muted }}>Tap untuk ambil foto</p>
-                <p className="text-[10px]" style={{ color: C.muted }}>Gunakan kamera atau pilih dari galeri · Maks. 5MB</p>
+                <p className="text-sm font-semibold" style={{ color: C.muted }}>Tap untuk ambil / pilih foto</p>
+                <p className="text-[10px]" style={{ color: C.muted }}>Gunakan kamera atau pilih dari galeri · Maks. 5MB per file</p>
               </button>
             )}
             <input
               ref={fileInputRef}
               type="file"
               accept="image/*"
-              capture="environment"
+              multiple
               onChange={handlePhotoChange}
               className="hidden"
             />
@@ -392,7 +437,7 @@ export default function UpdateProgressPage() {
         <section className="space-y-3 pb-2">
           <button
             type="submit"
-            disabled={isSubmitting || !selectedProjectId || isCompressing}
+            disabled={isSubmitting || selectedProjectId === "" || isCompressing}
             className="w-full py-3.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-sm transition-all duration-150 active:scale-[0.98] shadow-[0_4px_14px_rgba(249,115,22,0.3)] flex items-center justify-center gap-2 disabled:opacity-60"
           >
             {isSubmitting ? (

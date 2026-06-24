@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { loginAction } from "./actions";
 
@@ -13,9 +13,12 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const isSubmittingRef = useRef(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
     setIsLoading(true);
     setErrorMsg(null);
 
@@ -28,6 +31,8 @@ export default function LoginPage() {
 
       if (result.error) {
         setErrorMsg(result.error);
+        setIsLoading(false);
+        isSubmittingRef.current = false;
         return;
       }
 
@@ -41,8 +46,8 @@ export default function LoginPage() {
     } catch (err: unknown) {
       console.error("Login error:", err);
       setErrorMsg("Terjadi kesalahan. Silakan coba lagi.");
-    } finally {
       setIsLoading(false);
+      isSubmittingRef.current = false;
     }
   }
 
@@ -55,7 +60,7 @@ export default function LoginPage() {
         fill
         className="object-cover object-center"
         priority
-        quality={90}
+        quality={80}
       />
 
       {/* ── Dim overlay ~85% ── */}

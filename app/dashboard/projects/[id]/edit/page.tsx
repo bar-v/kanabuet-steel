@@ -17,6 +17,7 @@ const DynamicMapPicker = dynamic(() => import("@/components/MapPicker"), {
 });
 
 import { C } from "@/lib/utils/theme";
+import { useUI } from "@/contexts/UIContext";
 
 const STATUS_OPTIONS: { label: string; value: ProjectStatus }[] = [
   { label: "Menunggu Validasi", value: "menunggu_validasi" },
@@ -30,6 +31,7 @@ interface Props { params: Promise<{ id: string }>; }
 export default function EditProjectPage({ params }: Props) {
   const router = useRouter();
   const supabase = createClient();
+  const { showToast } = useUI();
 
   const [projectId, setProjectId] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -177,10 +179,11 @@ type GpsState =
       mutate('admin_projects');
       mutate('admin_dashboard_data');
       mutate(`admin_project_edit_${projectId}`);
+      showToast(`Berhasil menyimpan perubahan proyek`, "success");
       router.push(`/dashboard/projects/${projectId}`);
       router.refresh();
     } catch (err: unknown) {
-      alert("Gagal menyimpan: " + (err instanceof Error ? err.message : String(err)));
+      showToast("Gagal menyimpan: " + (err instanceof Error ? err.message : String(err)), "error");
     } finally {
       setIsSubmitting(false);
     }
