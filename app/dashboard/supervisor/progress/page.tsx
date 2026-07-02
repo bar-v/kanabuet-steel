@@ -5,9 +5,7 @@ import { useRouter } from "next/navigation";
 import imageCompression from "browser-image-compression";
 import exifr from 'exifr';
 import { set, get, del } from 'idb-keyval';
-import {
-  MapPin, CalendarClock, Camera, FileText, Save, ChevronDown, Search, X, Plus, Clock
-} from "lucide-react";
+import { MapPin, CalendarClock, Camera, FileText, Save, ChevronDown, Search, X, Plus, Clock, Loader2 } from "lucide-react";
 import type { Project } from "@/lib/types/database";
 import useSWR, { mutate } from "swr";
 import { fetcher } from "@/lib/utils/fetcher";
@@ -62,6 +60,7 @@ export default function UpdateProgressPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [photoMetadata, setPhotoMetadata] = useState<{ lat?: number; lng?: number; time?: string } | null>(null);
   const [hasDraft, setHasDraft] = useState<boolean>(false);
+  const [isLocating, setIsLocating] = useState(false);
 
   // Sync pct ke latest progress ketika proyek dipilih
   useEffect(() => {
@@ -164,6 +163,49 @@ export default function UpdateProgressPage() {
   };
 
   const [isCompressing, setIsCompressing] = useState(false);
+
+  const handleUploadClick = () => {
+    if (!selectedProjectId) {
+      showToast("Pilih proyek terlebih dahulu sebelum memilih foto.", "error");
+      return;
+    }
+
+    if (!("geolocation" in navigator)) {
+      fileInputRef.current?.click();
+      return;
+    }
+
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setIsLocating(false);
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        const time = new Date(pos.timestamp || Date.now()).toLocaleString('id-ID');
+        
+        const selectedProject = projects.find(p => p.project_id === Number(selectedProjectId));
+
+        // Validasi Jarak Geofence (Radius 200m)
+        if (selectedProject?.latitude && selectedProject?.longitude) {
+          const distance = getDistanceInMeters(selectedProject.latitude, selectedProject.longitude, lat, lng);
+          if (distance > 200) {
+            showToast(`Anda berada di luar area proyek (Jarak: ${Math.round(distance)}m, Maks: 200m). Pastikan Anda berada di lokasi proyek.`, "error");
+            return;
+          }
+        }
+
+        setPhotoMetadata({ lat, lng, time });
+        fileInputRef.current?.click();
+      },
+      (err) => {
+        setIsLocating(false);
+        console.warn("HTML5 GPS Error:", err);
+        // Fallback ke kamera dan baca EXIF jika GPS gagal
+        fileInputRef.current?.click();
+      },
+      { enableHighAccuracy: true, timeout: 15000 }
+    );
+  };
 
   const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -546,10 +588,12 @@ export default function UpdateProgressPage() {
             {photoPreviews.length > 0 && (
               <button
                 type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="text-xs font-bold text-orange-500 hover:text-orange-600 flex items-center gap-1"
+                onClick={handleUploadClick}
+                disabled={isLocating}
+                className="text-xs font-bold text-orange-500 hover:text-orange-600 flex items-center gap-1 disabled:opacity-50"
               >
-                <Plus size={14} /> Tambah Foto
+                {isLocating ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />} 
+                {isLocating ? "Mencari Lokasi..." : "Tambah Foto"}
               </button>
             )}
           </div>
@@ -576,13 +620,23 @@ export default function UpdateProgressPage() {
             ) : (
               <button
                 type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="w-full py-6 rounded-xl border-2 border-dashed flex flex-col items-center gap-2 hover:border-orange-300 hover:bg-orange-50 transition-all duration-150"
+                onClick={handleUploadClick}
+                disabled={isLocating}
+                className="w-full py-6 rounded-xl border-2 border-dashed flex flex-col items-center gap-2 hover:border-orange-300 hover:bg-orange-50 transition-all duration-150 disabled:opacity-50"
                 style={{ borderColor: C.border }}
               >
-                <Camera size={28} style={{ color: C.muted }} />
-                <p className="text-sm font-semibold" style={{ color: C.muted }}>Tap untuk ambil / pilih foto</p>
-                <p className="text-[10px]" style={{ color: C.muted }}>Gunakan kamera atau pilih dari galeri · Maks. 5MB per file</p>
+                {isLocating ? (
+                  <>
+                    <Loader2 size={28} className="animate-spin text-orange-500" />
+                    <p className="text-sm font-semibold" style={{ color: C.muted }}>Mencari lokasi GPS Anda...</p>
+                  </>
+                ) : (
+                  <>
+                    <Camera size={28} style={{ color: C.muted }} />
+                    <p className="text-sm font-semibold" style={{ color: C.muted }}>Tap untuk ambil / pilih foto</p>
+                    <p className="text-[10px]" style={{ color: C.muted }}>Gunakan kamera atau pilih dari galeri · Maks. 5MB per file</p>
+                  </>
+                )}
               </button>
             )}
             <input
