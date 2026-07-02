@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import imageCompression from "browser-image-compression";
-import exifr from 'exifr';
 import { set, get, del } from 'idb-keyval';
 import { MapPin, CalendarClock, Camera, FileText, Save, ChevronDown, Search, X, Plus, Clock, Loader2 } from "lucide-react";
 import type { Project } from "@/lib/types/database";
@@ -58,9 +57,9 @@ export default function UpdateProgressPage() {
   const [photoFiles, setPhotoFiles] = useState<File[]>([]);
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [photoMetadata, setPhotoMetadata] = useState<{ lat?: number; lng?: number; time?: string } | null>(null);
   const [hasDraft, setHasDraft] = useState<boolean>(false);
   const [isLocating, setIsLocating] = useState(false);
+  const [hasRequestedGPS, setHasRequestedGPS] = useState(false);
 
   // Sync pct ke latest progress ketika proyek dipilih
   useEffect(() => {
@@ -105,8 +104,7 @@ export default function UpdateProgressPage() {
         pct,
         notes,
         updateDate,
-        photoFiles,
-        photoMetadata
+        photoFiles
       };
       await set(DRAFT_KEY, draftData);
       setHasDraft(true);
@@ -125,7 +123,6 @@ export default function UpdateProgressPage() {
         if (draft.pct !== undefined) setPct(draft.pct);
         if (draft.notes !== undefined) setNotes(draft.notes);
         if (draft.updateDate !== undefined) setUpdateDate(draft.updateDate);
-        if (draft.photoMetadata !== undefined) setPhotoMetadata(draft.photoMetadata);
 
         if (draft.photoFiles && Array.isArray(draft.photoFiles)) {
           setPhotoFiles(draft.photoFiles);
@@ -181,8 +178,7 @@ export default function UpdateProgressPage() {
         setIsLocating(false);
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
-        const time = new Date(pos.timestamp || Date.now()).toLocaleString('id-ID');
-        
+
         const selectedProject = projects.find(p => p.project_id === Number(selectedProjectId));
 
         // Validasi Jarak Geofence (Radius 200m)
@@ -194,14 +190,12 @@ export default function UpdateProgressPage() {
           }
         }
 
-        setPhotoMetadata({ lat, lng, time });
         fileInputRef.current?.click();
       },
       (err) => {
         setIsLocating(false);
         console.warn("HTML5 GPS Error:", err);
-        // Fallback ke kamera dan baca EXIF jika GPS gagal
-        fileInputRef.current?.click();
+        showToast("Gagal mendapatkan lokasi. Pastikan GPS menyala dan izin diberikan.", "error");
       },
       { enableHighAccuracy: true, timeout: 15000 }
     );
@@ -215,44 +209,6 @@ export default function UpdateProgressPage() {
       showToast("Pilih proyek terlebih dahulu sebelum memilih foto.", "error");
       if (fileInputRef.current) fileInputRef.current.value = "";
       return;
-    }
-
-    const selectedProject = projects.find(p => p.project_id === Number(selectedProjectId));
-
-    // Ekstrak EXIF dari foto pertama (jika ada) sebelum di-compress
-    if (!photoMetadata) {
-      try {
-        const metadata = await exifr.parse(files[0], { gps: true, exif: true });
-
-        if (!metadata || !metadata.latitude || !metadata.longitude) {
-          showToast("Foto tidak memiliki data lokasi (GPS). Pastikan GPS HP menyala saat memfoto.", "error");
-          if (fileInputRef.current) fileInputRef.current.value = "";
-          return;
-        }
-
-        const lat = metadata.latitude;
-        const lng = metadata.longitude;
-        const time = metadata.DateTimeOriginal ? new Date(metadata.DateTimeOriginal).toLocaleString('id-ID') : undefined;
-
-        // Validasi Jarak Geofence (Radius 200m)
-        if (selectedProject?.latitude && selectedProject?.longitude) {
-          const distance = getDistanceInMeters(selectedProject.latitude, selectedProject.longitude, lat, lng);
-          if (distance > 200) {
-            showToast(`Foto ditolak karena berada di luar area proyek (Jarak: ${Math.round(distance)}m, Maks: 200m).`, "error");
-            if (fileInputRef.current) fileInputRef.current.value = "";
-            return;
-          }
-        }
-
-        if (lat && lng) {
-          setPhotoMetadata({ lat, lng, time });
-        }
-      } catch (err) {
-        console.error("Gagal membaca EXIF", err);
-        showToast("Gagal membaca data lokasi dari foto. Pastikan format foto didukung.", "error");
-        if (fileInputRef.current) fileInputRef.current.value = "";
-        return;
-      }
     }
 
     // Tambahkan preview sementara
@@ -345,17 +301,7 @@ export default function UpdateProgressPage() {
         }
       }
 
-      let finalNotes = notes.trim() || "";
-      if (photoMetadata && (photoMetadata.lat || photoMetadata.time)) {
-        finalNotes += "\n\n— Metadata Foto —\n";
-        if (photoMetadata.lat && photoMetadata.lng) {
-          finalNotes += `Lokasi: Lat ${photoMetadata.lat.toFixed(6)}, Lng ${photoMetadata.lng.toFixed(6)}\n`;
-        }
-        if (photoMetadata.time) {
-          finalNotes += `Waktu Foto: ${photoMetadata.time}`;
-        }
-      }
-      finalNotes = finalNotes.trim();
+      const finalNotes = notes.trim();
 
       // Simpan progress via API
       const res = await fetch('/api/supervisor/progress', {
@@ -380,7 +326,6 @@ export default function UpdateProgressPage() {
       setNotes("");
       setPhotoFiles([]);
       setPhotoPreviews([]);
-      setPhotoMetadata(null);
       await del(DRAFT_KEY);
       setHasDraft(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -411,6 +356,10 @@ export default function UpdateProgressPage() {
               <button
                 type="button"
                 onClick={() => {
+                  if (!hasRequestedGPS && "geolocation" in navigator) {
+                    setHasRequestedGPS(true);
+                    navigator.geolocation.getCurrentPosition(() => { }, () => { }, { enableHighAccuracy: true });
+                  }
                   setProjectDropdownOpen(!projectDropdownOpen);
                   setProjectSearchQuery("");
                 }}
@@ -592,7 +541,7 @@ export default function UpdateProgressPage() {
                 disabled={isLocating}
                 className="text-xs font-bold text-orange-500 hover:text-orange-600 flex items-center gap-1 disabled:opacity-50"
               >
-                {isLocating ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />} 
+                {isLocating ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
                 {isLocating ? "Mencari Lokasi..." : "Tambah Foto"}
               </button>
             )}
