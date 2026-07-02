@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import {
   MapPin, CalendarClock, UserCircle2,
-  Activity, ChevronRight, Users, Edit2, TrendingUp,
+  Activity, ChevronRight, Users, Edit2,
   Package, AlertTriangle, ImageIcon, Plus, Navigation,
   Search, CheckCircle2, X, Trash2, Upload, FileText
 } from "lucide-react";
@@ -151,12 +151,20 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
   const selectedMaterial = materials.find(m => m.material_id.toString() === selectedMaterialId);
   const isCritical = selectedMaterial ? selectedMaterial.current_stock <= selectedMaterial.minimum_stock : false;
 
+  interface PhotoItem {
+    progress_id: number;
+    update_date: string;
+    photo_url: string;
+    percentage: number;
+    notes?: string;
+  }
+
   const groupedPhotos = photos.reduce((acc, photo) => {
     const date = formatDate(photo.update_date);
     if (!acc[date]) acc[date] = [];
     acc[date].push(photo);
     return acc;
-  }, {} as Record<string, any[]>);
+  }, {} as Record<string, PhotoItem[]>);
 
   type ActivityType = 'progress' | 'photo' | 'validation' | 'note' | 'material';
   interface ActivityItem {
@@ -784,7 +792,7 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
                       <div className="h-px flex-1 bg-slate-200" />
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                      {(photosInDate as any[])
+                      {(photosInDate as PhotoItem[])
                         .flatMap(photo => photo.photo_url ? photo.photo_url.split(',').map((url: string) => ({...photo, photo_url: url})) : [])
                         .map((photo, i) => (
                         <div key={`${photo.progress_id}-${i}`} className="group relative rounded-xl overflow-hidden shadow-sm border border-slate-200 bg-white aspect-square">

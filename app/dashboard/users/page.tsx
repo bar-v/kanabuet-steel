@@ -137,11 +137,12 @@ export default function UserManagementPage() {
       setShowModal(false);
       resetForm();
       mutate('admin_users');
-    } catch (err: any) {
-      if (err?.code === "23505") {
+    } catch (err: unknown) {
+      const errorObj = err as { code?: string; message?: string };
+      if (errorObj?.code === "23505") {
         setErrorMessage("Gagal menyimpan: Email ini sudah terdaftar. Silakan gunakan alamat email lain.");
       } else {
-        setErrorMessage("Gagal menyimpan: " + (err?.message || String(err)));
+        setErrorMessage("Gagal menyimpan: " + (errorObj?.message || String(err)));
       }
     } finally {
       setIsSubmitting(false);

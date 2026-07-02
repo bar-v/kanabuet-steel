@@ -47,7 +47,7 @@ export async function GET(
       allMembers.push({
         member_id: -1, // pseudo ID
         project_id: projectId,
-        member_name: (project.users as any).fullname,
+        member_name: (project.users as { fullname: string }).fullname,
         phone_number: null,
         project_role: "Supervisor Proyek",
       });

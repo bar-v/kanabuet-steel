@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import imageCompression from "browser-image-compression";
+import exifr from 'exifr';
+import { set, get, del } from 'idb-keyval';
 import {
-  MapPin, CalendarClock, Camera, FileText, Save, ChevronDown, Search, X, Plus
+  MapPin, CalendarClock, Camera, FileText, Save, ChevronDown, Search, X, Plus, Clock
 } from "lucide-react";
 import type { Project } from "@/lib/types/database";
 import useSWR, { mutate } from "swr";
@@ -24,8 +26,7 @@ export default function UpdateProgressPage() {
 
   // SWR data fetching
   const { data: projectsData, isLoading: projectsLoading } = useSWR('/api/supervisor/projects', fetcher);
-  const projects = (projectsData?.projects as (Project & { latest_progress?: number })[]) || [];
-  const isLoading = projectsLoading;
+  const projects = useMemo(() => (projectsData?.projects as (Project & { latest_progress?: number })[]) || [], [projectsData?.projects]);
 
   // Searchable Dropdown States
   const [projectDropdownOpen, setProjectDropdownOpen] = useState(false);
@@ -59,8 +60,8 @@ export default function UpdateProgressPage() {
   const [photoFiles, setPhotoFiles] = useState<File[]>([]);
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-
+  const [photoMetadata, setPhotoMetadata] = useState<{ lat?: number; lng?: number; time?: string } | null>(null);
+  const [hasDraft, setHasDraft] = useState<boolean>(false);
 
   // Sync pct ke latest progress ketika proyek dipilih
   useEffect(() => {
@@ -82,11 +83,135 @@ export default function UpdateProgressPage() {
     }
   }, [projects, selectedProjectId]);
 
+  const DRAFT_KEY = `draft_progress_${selectedProjectId}`;
+
+  // Check for draft
+  useEffect(() => {
+    if (selectedProjectId !== "") {
+      get(DRAFT_KEY).then(draft => {
+        setHasDraft(!!draft);
+      });
+    } else {
+      setHasDraft(false);
+    }
+  }, [selectedProjectId, DRAFT_KEY]);
+
+  const handleSaveDraft = async () => {
+    if (!selectedProjectId) {
+      showToast("Pilih proyek terlebih dahulu untuk menyimpan draf.", "error");
+      return;
+    }
+    try {
+      const draftData = {
+        pct,
+        notes,
+        updateDate,
+        photoFiles,
+        photoMetadata
+      };
+      await set(DRAFT_KEY, draftData);
+      setHasDraft(true);
+      showToast("Draf berhasil disimpan ke perangkat.", "success");
+    } catch (err) {
+      console.error(err);
+      showToast("Gagal menyimpan draf.", "error");
+    }
+  };
+
+  const handleLoadDraft = async () => {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const draft: any = await get(DRAFT_KEY);
+      if (draft) {
+        if (draft.pct !== undefined) setPct(draft.pct);
+        if (draft.notes !== undefined) setNotes(draft.notes);
+        if (draft.updateDate !== undefined) setUpdateDate(draft.updateDate);
+        if (draft.photoMetadata !== undefined) setPhotoMetadata(draft.photoMetadata);
+
+        if (draft.photoFiles && Array.isArray(draft.photoFiles)) {
+          setPhotoFiles(draft.photoFiles);
+          const previews = draft.photoFiles.map((f: File) => URL.createObjectURL(f));
+          setPhotoPreviews(previews);
+        }
+        showToast("Draf berhasil dimuat.", "success");
+      }
+    } catch (err) {
+      console.error(err);
+      showToast("Gagal memuat draf.", "error");
+    }
+  };
+
+  const handleDeleteDraft = async () => {
+    try {
+      await del(DRAFT_KEY);
+      setHasDraft(false);
+      showToast("Draf berhasil dihapus.", "success");
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const getDistanceInMeters = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 6371000; // Radius bumi dalam meter
+    const dLat = (lat2 - lat1) * (Math.PI / 180);
+    const dLon = (lon2 - lon1) * (Math.PI / 180);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
   const [isCompressing, setIsCompressing] = useState(false);
 
   const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
+
+    if (!selectedProjectId) {
+      showToast("Pilih proyek terlebih dahulu sebelum memilih foto.", "error");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
+    const selectedProject = projects.find(p => p.project_id === Number(selectedProjectId));
+
+    // Ekstrak EXIF dari foto pertama (jika ada) sebelum di-compress
+    if (!photoMetadata) {
+      try {
+        const metadata = await exifr.parse(files[0], { gps: true, exif: true });
+
+        if (!metadata || !metadata.latitude || !metadata.longitude) {
+          showToast("Foto tidak memiliki data lokasi (GPS). Pastikan GPS HP menyala saat memfoto.", "error");
+          if (fileInputRef.current) fileInputRef.current.value = "";
+          return;
+        }
+
+        const lat = metadata.latitude;
+        const lng = metadata.longitude;
+        const time = metadata.DateTimeOriginal ? new Date(metadata.DateTimeOriginal).toLocaleString('id-ID') : undefined;
+
+        // Validasi Jarak Geofence (Radius 200m)
+        if (selectedProject?.latitude && selectedProject?.longitude) {
+          const distance = getDistanceInMeters(selectedProject.latitude, selectedProject.longitude, lat, lng);
+          if (distance > 200) {
+            showToast(`Foto ditolak karena berada di luar area proyek (Jarak: ${Math.round(distance)}m, Maks: 200m).`, "error");
+            if (fileInputRef.current) fileInputRef.current.value = "";
+            return;
+          }
+        }
+
+        if (lat && lng) {
+          setPhotoMetadata({ lat, lng, time });
+        }
+      } catch (err) {
+        console.error("Gagal membaca EXIF", err);
+        showToast("Gagal membaca data lokasi dari foto. Pastikan format foto didukung.", "error");
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        return;
+      }
+    }
 
     // Tambahkan preview sementara
     const newPreviews = files.map(file => URL.createObjectURL(file));
@@ -178,6 +303,18 @@ export default function UpdateProgressPage() {
         }
       }
 
+      let finalNotes = notes.trim() || "";
+      if (photoMetadata && (photoMetadata.lat || photoMetadata.time)) {
+        finalNotes += "\n\n— Metadata Foto —\n";
+        if (photoMetadata.lat && photoMetadata.lng) {
+          finalNotes += `Lokasi: Lat ${photoMetadata.lat.toFixed(6)}, Lng ${photoMetadata.lng.toFixed(6)}\n`;
+        }
+        if (photoMetadata.time) {
+          finalNotes += `Waktu Foto: ${photoMetadata.time}`;
+        }
+      }
+      finalNotes = finalNotes.trim();
+
       // Simpan progress via API
       const res = await fetch('/api/supervisor/progress', {
         method: "POST",
@@ -185,7 +322,7 @@ export default function UpdateProgressPage() {
         body: JSON.stringify({
           project_id: Number(selectedProjectId),
           percentage: pct,
-          notes: notes.trim() || null,
+          notes: finalNotes || null,
           photo_url: photoUrl,
           update_date: updateDate,
         }),
@@ -201,6 +338,9 @@ export default function UpdateProgressPage() {
       setNotes("");
       setPhotoFiles([]);
       setPhotoPreviews([]);
+      setPhotoMetadata(null);
+      await del(DRAFT_KEY);
+      setHasDraft(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
 
       // Refresh data
@@ -316,6 +456,29 @@ export default function UpdateProgressPage() {
             )}
           </div>
         </section>
+
+        {/* Banner Draf */}
+        {hasDraft && selectedProject && (
+          <div className="rounded-xl border border-sky-200 bg-sky-50 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-full bg-sky-100 flex items-center justify-center text-sky-600 shrink-0 mt-0.5">
+                <Clock size={16} />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-sky-800">Draf Tersedia</p>
+                <p className="text-xs font-medium text-sky-600 mt-0.5">Anda memiliki draf yang belum dikirim untuk proyek ini.</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 w-full sm:w-auto mt-1 sm:mt-0">
+              <button type="button" onClick={handleLoadDraft} className="flex-1 sm:flex-none px-4 py-2 rounded-lg bg-sky-600 text-white text-xs font-bold hover:bg-sky-700 transition-colors shadow-sm">
+                Muat Draf
+              </button>
+              <button type="button" onClick={handleDeleteDraft} className="px-3 py-2 rounded-lg border border-sky-200 text-sky-600 hover:bg-sky-100 text-xs font-bold transition-colors">
+                Hapus
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* 2. Form Update */}
         <section>
@@ -435,17 +598,27 @@ export default function UpdateProgressPage() {
 
         {/* 4. Actions */}
         <section className="space-y-3 pb-2">
-          <button
-            type="submit"
-            disabled={isSubmitting || selectedProjectId === "" || isCompressing}
-            className="w-full py-3.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-sm transition-all duration-150 active:scale-[0.98] shadow-[0_4px_14px_rgba(249,115,22,0.3)] flex items-center justify-center gap-2 disabled:opacity-60"
-          >
-            {isSubmitting ? (
-              <><svg className="animate-spin" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg> Menyimpan...</>
-            ) : (
-              <><Save size={17} /> Simpan Progress</>
-            )}
-          </button>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={handleSaveDraft}
+              disabled={isSubmitting || selectedProjectId === "" || isCompressing}
+              className="flex-1 py-3.5 rounded-xl border-2 border-orange-500 text-orange-600 hover:bg-orange-50 font-bold text-sm transition-all duration-150 disabled:opacity-50 active:scale-[0.98]"
+            >
+              Simpan ke Draf
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting || selectedProjectId === "" || isCompressing}
+              className="flex-[2] py-3.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-sm transition-all duration-150 active:scale-[0.98] shadow-[0_4px_14px_rgba(249,115,22,0.3)] flex items-center justify-center gap-2 disabled:opacity-60"
+            >
+              {isSubmitting ? (
+                <><svg className="animate-spin" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg> Menyimpan...</>
+              ) : (
+                <><Save size={17} /> Simpan Progress</>
+              )}
+            </button>
+          </div>
           <button
             type="button"
             onClick={() => router.push("/dashboard/supervisor")}

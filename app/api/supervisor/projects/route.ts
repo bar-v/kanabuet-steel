@@ -21,7 +21,7 @@ export async function GET() {
     // Ambil progress terbaru untuk setiap proyek
     const projectIds = (projects || []).map((p: { project_id: number }) => p.project_id);
 
-    let progressMap: Record<number, number> = {};
+    const progressMap: Record<number, number> = {};
     if (projectIds.length > 0) {
       const { data: progressData } = await supabaseAdmin
         .from("project_progress")

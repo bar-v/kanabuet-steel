@@ -64,17 +64,11 @@ export default function ProjectMembersPage({ params }: Props) {
       .from('project_members')
       .select('member_name, phone_number, project_role');
 
-    let uniqueHistory: WorkerHistoryItem[] = [];
-    if (historyData) {
-      const seen = new Set<string>();
-      for (const item of historyData as WorkerHistoryItem[]) {
-        if (!seen.has(item.member_name)) {
-          seen.add(item.member_name);
-          uniqueHistory.push(item);
-        }
-      }
-      uniqueHistory.sort((a, b) => a.member_name.localeCompare(b.member_name));
-    }
+    const uniqueHistory: WorkerHistoryItem[] = historyData 
+      ? historyData.filter((item, index, self) =>
+          index === self.findIndex((t) => t.member_name === item.member_name)
+        ).sort((a, b) => a.member_name.localeCompare(b.member_name))
+      : [];
 
     return {
       project: projectData as (Project & { supervisor?: { fullname: string; email: string } | null }) | null,

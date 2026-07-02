@@ -1,16 +1,13 @@
 "use client";
 
-import Image from "next/image";
-import { useState, useEffect, useCallback } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import {
-  LayoutGrid, FolderOpen, TrendingUp, Package,
-  LogOut, Menu, X, Bell, ChevronRight,
-  RefreshCw, MapPin, Camera, Navigation,
-  CheckCheck, CalendarClock, AlertCircle, Clock,
-  CheckCircle2, FileText, Activity, Upload,
+  FolderOpen, Package, ChevronRight,
+  RefreshCw, MapPin, CalendarClock, AlertCircle,
+  FileText, Activity, Upload,
 } from "lucide-react";
-import type { Project, User, ProjectProgress, ProjectMember } from "@/lib/types/database";
+import type { Project, User, ProjectProgress } from "@/lib/types/database";
 import useSWR, { mutate } from "swr";
 import { fetcher } from "@/lib/utils/fetcher";
 import { C, getStatusStyle, getStatusLabel, getProgressColor } from "@/lib/utils/theme";
@@ -21,12 +18,7 @@ import { useUI } from "@/contexts/UIContext";
 // ── Design tokens ─────────────────────────────────────────────
 
 
-// GPS State
-type GpsState =
-  | { status: "idle" }
-  | { status: "loading" }
-  | { status: "success"; lat: number; lng: number; timestamp: Date }
-  | { status: "error"; message: string };
+
 
 // ── Component ─────────────────────────────────────────────────
 export default function SupervisorDashboard() {
@@ -39,7 +31,7 @@ export default function SupervisorDashboard() {
   const { data: progressData, isLoading: progressLoading } = useSWR('/api/supervisor/progress', fetcher);
 
   const user = authData?.user as User | undefined;
-  const projects = (projectsData?.projects as (Project & { latest_progress?: number })[]) || [];
+  const projects = useMemo(() => (projectsData?.projects as (Project & { latest_progress?: number })[]) || [], [projectsData?.projects]);
   
   // --- Parse Activities ---
   type ActivityType = 'progress' | 'photo' | 'validation' | 'note';
@@ -118,15 +110,14 @@ export default function SupervisorDashboard() {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      setActiveProjectId(localStorage.getItem("active_project_id"));
+      const id = localStorage.getItem("active_project_id");
+      if (id) {
+        setTimeout(() => setActiveProjectId(id), 0);
+      }
     }
   }, []);
 
-  // GPS state
-  const [gps, setGps] = useState<GpsState>({ status: "idle" });
 
-  // Proyek yang dipilih untuk validasi lokasi
-  const [selectedValidationProject, setSelectedValidationProject] = useState<number | "">("");
 
 
 
@@ -136,92 +127,12 @@ export default function SupervisorDashboard() {
       const p = projects.find(proj => proj.project_id.toString() === activeProjectId);
       if (!p) {
         localStorage.removeItem("active_project_id");
-        setActiveProjectId(null);
+        setTimeout(() => setActiveProjectId(null), 0);
       }
     }
   }, [isLoading, projects, activeProjectId]);
 
-  // Ambil GPS perangkat
-  const handleAmbilGps = () => {
-    if (!("geolocation" in navigator)) {
-      setGps({ status: "error", message: "Perangkat tidak mendukung GPS." });
-      return;
-    }
-    setGps({ status: "loading" });
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setGps({
-          status: "success",
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-          timestamp: new Date(),
-        });
-      },
-      (err) => {
-        setGps({ status: "error", message: `Gagal mengambil GPS: ${err.message}` });
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
-  };
-
-  // Simpan validasi lokasi via API
-  const handleSimpanValidasi = async () => {
-    if (gps.status !== "success" || !selectedValidationProject) return;
-
-    try {
-      const res = await fetch(`/api/supervisor/projects/${selectedValidationProject}/validate-location`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          latitude: gps.lat,
-          longitude: gps.lng,
-        }),
-      });
-
-      const result = await res.json();
-      if (!res.ok) {
-        showToast(result.error || "Gagal menyimpan validasi lokasi.", "error");
-        return;
-      }
-
-      showToast("Lokasi proyek berhasil divalidasi! Status proyek kini: Aktif.", "success");
-      setGps({ status: "idle" });
-      setSelectedValidationProject("");
-      mutate('/api/supervisor/projects');
-    } catch {
-      showToast("Terjadi kesalahan saat menyimpan lokasi.", "error");
-    }
-  };
-
-  // Update lokasi GPS untuk proyek yang sudah aktif
-  const handleUpdateLokasi = async (projectId: number) => {
-    if (gps.status !== "success") return;
-
-    try {
-      const res = await fetch(`/api/supervisor/projects/${projectId}/update-location`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          latitude: gps.lat,
-          longitude: gps.lng,
-        }),
-      });
-
-      const result = await res.json();
-      if (!res.ok) {
-        showToast(result.error || "Gagal memperbarui lokasi.", "error");
-        return;
-      }
-
-      showToast("Lokasi proyek berhasil diperbarui.", "success");
-      mutate('/api/supervisor/projects');
-    } catch {
-      showToast("Terjadi kesalahan saat memperbarui lokasi.", "error");
-    }
-  };
-
   const activeProject = activeProjectId ? projects.find(p => p.project_id.toString() === activeProjectId) : null;
-  const pendingProjects = projects.filter(p => p.status === "menunggu_validasi");
 
   return (
     <DashboardShell role="supervisor" title="Dashboard Pengawas" subtitle={user?.fullname ?? ""}>

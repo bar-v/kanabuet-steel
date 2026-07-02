@@ -75,7 +75,7 @@ export default function LocationValidationPage() {
     if (pendingProjects.length > 0 && selectedProjectId === "") {
       const active = localStorage.getItem("active_project_id");
       if (active && pendingProjects.some(p => p.project_id.toString() === active)) {
-        setSelectedProjectId(active);
+        setTimeout(() => setSelectedProjectId(active), 0);
       }
     }
   }, [pendingProjects, selectedProjectId]);

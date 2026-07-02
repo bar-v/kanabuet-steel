@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { LogOut, Menu, X, Bell, ArrowLeft } from "lucide-react";
+import { LogOut, Menu, X, ArrowLeft } from "lucide-react";
 import { OWNER_NAV, SUPERVISOR_NAV, isNavActive } from "@/lib/config/navigation";
 import type { User } from "@/lib/types/database";
 import { useLogout } from "@/lib/auth/client";
@@ -61,7 +61,7 @@ export default function DashboardShell({
 
     if (process.env.NODE_ENV === "development" && typeof window !== 'undefined' && 'serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then((registrations) => {
-        for (let registration of registrations) {
+        for (const registration of registrations) {
           registration.unregister();
         }
       });
@@ -77,7 +77,7 @@ export default function DashboardShell({
       };
       return () => channel.close();
     }
-  }, []);
+  }, [pathname]);
 
   const handleLogout = useLogout();
 

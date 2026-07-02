@@ -17,7 +17,7 @@ export async function proxy(request: NextRequest) {
         algorithms: ["HS256"],
       });
       userPayload = payload;
-    } catch (error) {
+    } catch {
       // Token tidak valid atau kedaluwarsa
     }
   }
@@ -43,7 +43,6 @@ export async function proxy(request: NextRequest) {
     // Proteksi RBAC (Role-Based Access Control)
     if (isProtectedRoute) {
       const isSupervisorRoute = pathname.startsWith('/dashboard/supervisor');
-      const isOwnerRoute = pathname.startsWith('/dashboard') && !isSupervisorRoute && pathname !== '/dashboard/supervisor'; 
       // note: owner routes includes /projects
 
       if (systemRole === 'supervisor' && !isSupervisorRoute) {

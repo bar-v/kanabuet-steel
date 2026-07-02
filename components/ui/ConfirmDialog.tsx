@@ -23,11 +23,11 @@ export default function ConfirmDialog({
 
   useEffect(() => {
     if (isOpen) {
-      setRender(true);
+      setTimeout(() => setRender(true), 0);
       const timer = setTimeout(() => setShow(true), 10);
       return () => clearTimeout(timer);
     } else {
-      setShow(false);
+      setTimeout(() => setShow(false), 0);
       const timer = setTimeout(() => setRender(false), 300); // Wait for fade out
       return () => clearTimeout(timer);
     }
