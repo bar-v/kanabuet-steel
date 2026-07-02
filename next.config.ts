@@ -11,7 +11,7 @@ const nextConfig: NextConfig = {
   // Mematikan pesan error/warning Next.js terkait Webpack custom plugin (Serwist) vs Turbopack saat `npm run dev`
   turbopack: {},
   images: {
-    qualities: [75, 90],
+    qualities: [70, 80],
   },
 };
 

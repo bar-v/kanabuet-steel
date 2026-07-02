@@ -7,7 +7,7 @@ import {
   MapPin, CalendarClock, UserCircle2,
   Activity, ChevronRight, Users, Edit2, TrendingUp,
   Package, AlertTriangle, ImageIcon, Plus, Navigation,
-  Search, CheckCircle2, X, Trash2
+  Search, CheckCircle2, X, Trash2, Upload, FileText
 } from "lucide-react";
 import type { Project, ProjectMember, Material } from "@/lib/types/database";
 import useSWR, { mutate } from "swr";
@@ -158,10 +158,85 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
     return acc;
   }, {} as Record<string, any[]>);
 
-  const combinedActivities = [
-    ...progressHistory.map(p => ({ id: `p-${p.progress_id}`, type: 'progress', date: p.created_at, data: p })),
-    ...materialUsage.map(m => ({ id: `m-${m.usage_id}`, type: 'material', date: m.created_at, data: m }))
-  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  type ActivityType = 'progress' | 'photo' | 'validation' | 'note' | 'material';
+  interface ActivityItem {
+    id: string;
+    type: ActivityType;
+    title: string;
+    subtitle: string;
+    date: Date;
+  }
+
+  const allActivities: ActivityItem[] = [];
+
+  // 1. Parse progressHistory
+  progressHistory.forEach((prog, index) => {
+    let dateStr = prog.created_at;
+    if (dateStr && !dateStr.includes('Z') && !dateStr.includes('+')) {
+      dateStr += 'Z';
+    }
+    const date = new Date(dateStr);
+
+    const previousProg = progressHistory.slice(index + 1)[0];
+    const previousPercentage = previousProg ? previousProg.percentage : 0;
+    const isPercentageChanged = prog.percentage !== previousPercentage;
+
+    if (prog.percentage === 0 && prog.notes?.includes("Tervalidasi")) {
+       allActivities.push({ id: `val-${prog.progress_id}`, type: 'validation', title: "Validasi lokasi berhasil", subtitle: project?.project_name || "", date });
+       if (prog.photo_url) {
+          allActivities.push({ id: `photo-${prog.progress_id}`, type: 'photo', title: "Upload foto dokumentasi (1 foto)", subtitle: project?.project_name || "", date });
+       }
+    } else {
+       if (isPercentageChanged && prog.percentage > 0) {
+          allActivities.push({ id: `prog-${prog.progress_id}`, type: 'progress', title: `Update progres ${prog.percentage}%`, subtitle: project?.project_name || "", date });
+       } else if (!isPercentageChanged && !prog.photo_url && !prog.notes && prog.percentage > 0) {
+          allActivities.push({ id: `prog-${prog.progress_id}-fb`, type: 'progress', title: `Update progres ${prog.percentage}%`, subtitle: project?.project_name || "", date });
+       }
+
+       if (prog.photo_url) {
+          const count = prog.photo_url.split(',').length;
+          allActivities.push({ id: `photo-${prog.progress_id}`, type: 'photo', title: `Upload foto dokumentasi (${count} foto)`, subtitle: project?.project_name || "", date });
+       }
+       if (prog.notes && !prog.notes.includes("Tervalidasi") && !prog.notes.includes("Tambahan foto")) {
+          allActivities.push({ id: `note-${prog.progress_id}`, type: 'note', title: `Catatan: ${prog.notes}`, subtitle: project?.project_name || "", date });
+       }
+    }
+  });
+
+  // 2. Parse materialUsage
+  materialUsage.forEach((m) => {
+    let dateStr = m.created_at;
+    if (dateStr && !dateStr.includes('Z') && !dateStr.includes('+')) {
+      dateStr += 'Z';
+    }
+    const date = new Date(dateStr);
+
+    const title = `Penggunaan ${m.materials?.material_name || "Material"}`;
+    const subtitle = `${m.quantity} ${m.materials?.unit || ""}${m.notes ? ` - ${m.notes}` : ""}`;
+    
+    allActivities.push({ id: `mat-${m.usage_id}`, type: 'material', title, subtitle, date });
+  });
+
+  const recentActivities = allActivities.sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 5);
+
+  const formatRelativeTime = (date: Date) => {
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffSecs = Math.floor(diffMs / 1000);
+    const diffMins = Math.floor(diffSecs / 60);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffSecs < 60) return `${Math.max(1, diffSecs)} detik lalu`;
+    if (diffMins < 60) return `${diffMins} menit lalu`;
+    if (diffHours < 24) return `${diffHours} jam lalu`;
+    
+    if (diffDays === 1) {
+      return `Kemarin, ${date.getHours().toString().padStart(2, '0')}.${date.getMinutes().toString().padStart(2, '0')}`;
+    }
+    
+    return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) + `, ${date.getHours().toString().padStart(2, '0')}.${date.getMinutes().toString().padStart(2, '0')}`;
+  };
 
   return (
     <div className="space-y-5 pb-24 relative">
@@ -283,40 +358,54 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
                 </button>
               </div>
               <div className="divide-y" style={{ borderColor: C.border }}>
-                {combinedActivities.length === 0 ? (
+                {recentActivities.length === 0 ? (
                   <div className="p-6 text-center">
                     <Activity size={24} className="mx-auto mb-2 opacity-30" style={{ color: C.muted }} />
                     <p className="text-xs font-medium" style={{ color: C.muted }}>Belum ada aktivitas untuk proyek ini.</p>
                   </div>
                 ) : (
-                  combinedActivities.slice(0, 3).map((act) => (
-                    <div key={act.id} className="flex items-start gap-3 p-4" style={{ borderColor: C.border }}>
-                      <span className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${act.type === 'progress' ? 'bg-orange-50 text-orange-600' : 'bg-violet-50 text-violet-600'}`}>
-                        {act.type === 'progress' ? <TrendingUp size={14} /> : <Package size={14} />}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2">
-                          <p className={`text-sm font-bold ${act.type === 'progress' ? 'text-orange-600' : 'text-violet-600'}`}>
-                            {act.type === 'progress' 
-                              ? `Pembaruan progres ke ${act.data.percentage}%` 
-                              : `Penggunaan Material`}
+                  recentActivities.map((activity) => {
+                    let Icon = Activity;
+                    let colorClass = "text-orange-600";
+                    let bgClass = "bg-orange-50";
+
+                    if (activity.type === 'photo') {
+                      Icon = Upload;
+                      colorClass = "text-sky-600";
+                      bgClass = "bg-sky-50";
+                    } else if (activity.type === 'validation') {
+                      Icon = MapPin;
+                      colorClass = "text-emerald-600";
+                      bgClass = "bg-emerald-50";
+                    } else if (activity.type === 'note') {
+                      Icon = FileText;
+                      colorClass = "text-violet-600";
+                      bgClass = "bg-violet-50";
+                    } else if (activity.type === 'material') {
+                      Icon = Package;
+                      colorClass = "text-indigo-600";
+                      bgClass = "bg-indigo-50";
+                    }
+
+                    return (
+                      <div key={activity.id} className="flex items-center gap-4 p-5" style={{ borderColor: C.border }}>
+                        <span className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${bgClass} ${colorClass}`}>
+                          <Icon size={20} strokeWidth={2} />
+                        </span>
+                        <div className="flex-1 min-w-0 flex flex-col justify-center">
+                          <p className="text-[15px] font-semibold leading-snug" style={{ color: C.text }}>
+                            {activity.title}
                           </p>
-                          <span className="text-[10px] font-medium shrink-0" style={{ color: C.muted }}>
-                            {formatDate(act.type === 'progress' ? act.data.update_date : act.data.usage_date)}
-                          </span>
+                          <p className="text-[13px] font-medium mt-0.5 truncate" style={{ color: C.muted }}>
+                            {activity.subtitle}
+                          </p>
                         </div>
-                        {act.type === 'progress' && act.data.notes && (
-                          <p className="text-xs mt-1 leading-snug" style={{ color: C.subtext }}>{act.data.notes}</p>
-                        )}
-                        {act.type === 'material' && (
-                          <p className="text-xs mt-1 leading-snug" style={{ color: C.subtext }}>
-                            {act.data.quantity} {act.data.materials?.unit || ''} {act.data.materials?.material_name || ''} 
-                            {act.data.notes ? ` - ${act.data.notes}` : ''}
-                          </p>
-                        )}
+                        <span className="text-[13px] font-medium shrink-0 whitespace-nowrap" style={{ color: C.muted }}>
+                          {formatRelativeTime(activity.date)}
+                        </span>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </section>

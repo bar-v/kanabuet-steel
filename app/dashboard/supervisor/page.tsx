@@ -8,7 +8,7 @@ import {
   LogOut, Menu, X, Bell, ChevronRight,
   RefreshCw, MapPin, Camera, Navigation,
   CheckCheck, CalendarClock, AlertCircle, Clock,
-  CheckCircle2, FileText,
+  CheckCircle2, FileText, Activity, Upload,
 } from "lucide-react";
 import type { Project, User, ProjectProgress, ProjectMember } from "@/lib/types/database";
 import useSWR, { mutate } from "swr";
@@ -40,7 +40,79 @@ export default function SupervisorDashboard() {
 
   const user = authData?.user as User | undefined;
   const projects = (projectsData?.projects as (Project & { latest_progress?: number })[]) || [];
-  const recentProgress = (progressData?.progress as ProjectProgress[])?.slice(0, 5) || [];
+  
+  // --- Parse Activities ---
+  type ActivityType = 'progress' | 'photo' | 'validation' | 'note';
+  interface ActivityItem {
+    id: string;
+    type: ActivityType;
+    title: string;
+    projectName: string;
+    date: Date;
+  }
+
+  const rawProgress = (progressData?.progress as ProjectProgress[]) || [];
+  const allActivities: ActivityItem[] = [];
+
+  rawProgress.forEach((prog, index) => {
+    const projName = projects.find(p => p.project_id === prog.project_id)?.project_name || `Proyek #${prog.project_id}`;
+    
+    // Fix timezone issue: Supabase might return timestamp without timezone 'Z'
+    let dateStr = prog.created_at;
+    if (dateStr && !dateStr.includes('Z') && !dateStr.includes('+')) {
+      dateStr += 'Z';
+    }
+    const date = new Date(dateStr);
+
+    // Find previous progress for this project (which is chronologically older, so index > current index)
+    const previousProg = rawProgress.slice(index + 1).find(p => p.project_id === prog.project_id);
+    const previousPercentage = previousProg ? previousProg.percentage : 0;
+    const isPercentageChanged = prog.percentage !== previousPercentage;
+
+    if (prog.percentage === 0 && prog.notes?.includes("Tervalidasi")) {
+       allActivities.push({ id: `val-${prog.progress_id}`, type: 'validation', title: "Validasi lokasi berhasil", projectName: projName, date });
+       if (prog.photo_url) {
+          allActivities.push({ id: `photo-${prog.progress_id}`, type: 'photo', title: "Upload foto dokumentasi (1 foto)", projectName: projName, date });
+       }
+    } else {
+       if (isPercentageChanged && prog.percentage > 0) {
+          allActivities.push({ id: `prog-${prog.progress_id}`, type: 'progress', title: `Update progres ${prog.percentage}%`, projectName: projName, date });
+       } else if (!isPercentageChanged && !prog.photo_url && !prog.notes && prog.percentage > 0) {
+          // Fallback: if percentage didn't change and no photo/notes, still show update progress so it's not empty
+          allActivities.push({ id: `prog-${prog.progress_id}-fallback`, type: 'progress', title: `Update progres ${prog.percentage}%`, projectName: projName, date });
+       }
+
+       if (prog.photo_url) {
+          const count = prog.photo_url.split(',').length;
+          allActivities.push({ id: `photo-${prog.progress_id}`, type: 'photo', title: `Upload foto dokumentasi (${count} foto)`, projectName: projName, date });
+       }
+       if (prog.notes && !prog.notes.includes("Tervalidasi") && !prog.notes.includes("Tambahan foto")) {
+          allActivities.push({ id: `note-${prog.progress_id}`, type: 'note', title: `Catatan: ${prog.notes}`, projectName: projName, date });
+       }
+    }
+  });
+
+  const recentActivities = allActivities.sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 5);
+
+  const formatRelativeTime = (date: Date) => {
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffSecs = Math.floor(diffMs / 1000);
+    const diffMins = Math.floor(diffSecs / 60);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffSecs < 60) return `${Math.max(1, diffSecs)} detik lalu`;
+    if (diffMins < 60) return `${diffMins} menit lalu`;
+    if (diffHours < 24) return `${diffHours} jam lalu`;
+    
+    if (diffDays === 1) {
+      return `Kemarin, ${date.getHours().toString().padStart(2, '0')}.${date.getMinutes().toString().padStart(2, '0')}`;
+    }
+    
+    return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) + `, ${date.getHours().toString().padStart(2, '0')}.${date.getMinutes().toString().padStart(2, '0')}`;
+  };
+
   const isLoading = authLoading || projectsLoading || progressLoading;
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
 
@@ -266,31 +338,45 @@ export default function SupervisorDashboard() {
             </div>
           </section>
 
-          {/* 3. AKTIVITAS PROGRESS TERBARU */}
-          {!isLoading && recentProgress.length > 0 && (
+          {/* 3. AKTIVITAS TERBARU */}
+          {!isLoading && recentActivities.length > 0 && (
             <section>
-              <h2 className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: C.muted }}>Update Progress Terbaru</h2>
+              <h2 className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: C.muted }}>Aktivitas Terbaru</h2>
               <div className="rounded-xl border divide-y" style={{ background: C.card, borderColor: C.border }}>
-                {recentProgress.map((prog) => {
-                  const proj = projects.find(p => p.project_id === prog.project_id);
+                {recentActivities.map((activity) => {
+                  let Icon = Activity;
+                  let colorClass = "text-orange-600";
+                  let bgClass = "bg-orange-50";
+
+                  if (activity.type === 'photo') {
+                    Icon = Upload;
+                    colorClass = "text-sky-600";
+                    bgClass = "bg-sky-50";
+                  } else if (activity.type === 'validation') {
+                    Icon = MapPin;
+                    colorClass = "text-emerald-600";
+                    bgClass = "bg-emerald-50";
+                  } else if (activity.type === 'note') {
+                    Icon = FileText;
+                    colorClass = "text-violet-600";
+                    bgClass = "bg-violet-50";
+                  }
+
                   return (
-                    <div key={prog.progress_id} className="flex items-start gap-3 p-4" style={{ borderColor: C.border }}>
-                      <span className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 bg-orange-50 text-orange-600">
-                        <TrendingUp size={15} />
+                    <div key={activity.id} className="flex items-center gap-4 p-5" style={{ borderColor: C.border }}>
+                      <span className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${bgClass} ${colorClass}`}>
+                        <Icon size={20} strokeWidth={2} />
                       </span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold leading-snug" style={{ color: C.text }}>
-                          Update {prog.percentage}%
+                      <div className="flex-1 min-w-0 flex flex-col justify-center">
+                        <p className="text-[15px] font-semibold leading-snug" style={{ color: C.text }}>
+                          {activity.title}
                         </p>
-                        <p className="text-[11px] font-medium mt-0.5 truncate" style={{ color: C.muted }}>
-                          {proj?.project_name ?? `Proyek #${prog.project_id}`}
+                        <p className="text-[13px] font-medium mt-0.5 truncate" style={{ color: C.muted }}>
+                          {activity.projectName}
                         </p>
-                        {prog.notes && (
-                          <p className="text-[11px] mt-0.5 italic truncate" style={{ color: C.muted }}>&quot;{prog.notes}&quot;</p>
-                        )}
                       </div>
-                      <span className="text-[10px] font-medium shrink-0 mt-0.5 whitespace-nowrap" style={{ color: C.muted }}>
-                        {formatDate(prog.update_date)}
+                      <span className="text-[13px] font-medium shrink-0 whitespace-nowrap" style={{ color: C.muted }}>
+                        {formatRelativeTime(activity.date)}
                       </span>
                     </div>
                   );
