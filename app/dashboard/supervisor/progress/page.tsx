@@ -167,38 +167,8 @@ export default function UpdateProgressPage() {
       return;
     }
 
-    if (!("geolocation" in navigator)) {
-      fileInputRef.current?.click();
-      return;
-    }
-
-    setIsLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setIsLocating(false);
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-
-        const selectedProject = projects.find(p => p.project_id === Number(selectedProjectId));
-
-        // Validasi Jarak Geofence (Radius 200m)
-        if (selectedProject?.latitude && selectedProject?.longitude) {
-          const distance = getDistanceInMeters(selectedProject.latitude, selectedProject.longitude, lat, lng);
-          if (distance > 200) {
-            showToast(`Anda berada di luar area proyek (Jarak: ${Math.round(distance)}m, Maks: 200m). Pastikan Anda berada di lokasi proyek.`, "error");
-            return;
-          }
-        }
-
-        fileInputRef.current?.click();
-      },
-      (err) => {
-        setIsLocating(false);
-        console.warn("HTML5 GPS Error:", err);
-        showToast("Gagal mendapatkan lokasi. Pastikan GPS menyala dan izin diberikan.", "error");
-      },
-      { enableHighAccuracy: true, timeout: 15000 }
-    );
+    // Langsung buka file picker, hindari blokir dari browser karena async callback
+    fileInputRef.current?.click();
   };
 
   const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -271,6 +241,32 @@ export default function UpdateProgressPage() {
     }
 
     setIsSubmitting(true);
+
+    // Validasi GPS dipindah ke sini saat submit
+    if ("geolocation" in navigator && selectedProject?.latitude && selectedProject?.longitude) {
+      try {
+        await new Promise<void>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              const lat = pos.coords.latitude;
+              const lng = pos.coords.longitude;
+              const distance = getDistanceInMeters(selectedProject.latitude!, selectedProject.longitude!, lat, lng);
+              if (distance > 200) {
+                reject(new Error(`Anda berada di luar area proyek (Jarak: ${Math.round(distance)}m, Maks: 200m). Pastikan Anda berada di lokasi proyek.`));
+              } else {
+                resolve();
+              }
+            },
+            (err) => reject(new Error("Gagal mendapatkan lokasi GPS. Pastikan GPS menyala dan izin diberikan.")),
+            { enableHighAccuracy: true, timeout: 15000 }
+          );
+        });
+      } catch (err: any) {
+        showToast(err.message, "error");
+        setIsSubmitting(false);
+        return;
+      }
+    }
 
     try {
       let photoUrl: string | null = null;
