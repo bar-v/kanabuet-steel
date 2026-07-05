@@ -3,7 +3,6 @@ import bcrypt from "bcryptjs";
 import { getSession } from "@/lib/auth/session";
 
 export async function POST(request: Request) {
-  // Only authenticated owners can hash passwords (for creating/editing supervisors)
   const session = await getSession();
   if (!session || session.systemRole !== "owner") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

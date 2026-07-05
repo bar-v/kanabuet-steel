@@ -114,8 +114,8 @@ export default function LocationValidationPage() {
 
         if (initialLocation) {
           const distance = getDistanceInMeters(initialLocation.lat, initialLocation.lng, actualLat, actualLng);
-          if (distance > 50) {
-            showToast(`Lokasi Anda (${distance.toFixed(1)} meter) berada di luar radius 50 meter dari inisial pin proyek. Silakan mendekat ke lokasi proyek.`, "error");
+          if (distance > 75) {
+            showToast(`Lokasi Anda (${distance.toFixed(1)} meter) berada di luar radius 75 meter dari inisial pin proyek. Silakan mendekat ke lokasi proyek.`, "error");
             setIsLocating(false);
             return;
           }
@@ -382,7 +382,17 @@ export default function LocationValidationPage() {
                     <MapPicker
                       position={locationData}
                       initialPosition={initialLocation}
-                      initialRadius={50}
+                      initialRadius={75}
+                      onLocationSelect={(lat, lng) => {
+                        if (initialLocation) {
+                          const distance = getDistanceInMeters(initialLocation.lat, initialLocation.lng, lat, lng);
+                          if (distance > 75) {
+                            showToast(`Titik yang dipilih (${distance.toFixed(1)} meter) berada di luar radius 75 meter dari inisial pin.`, "error");
+                            return;
+                          }
+                        }
+                        setLocationData({ lat, lng });
+                      }}
                     />
                     {locationData && (
                       <div className="mt-3 bg-emerald-50 text-emerald-700 px-4 py-2.5 rounded-lg border border-emerald-200 flex items-center justify-center gap-2">
