@@ -18,7 +18,7 @@ import { C, getStatusStyle, getStatusLabel, getProgressColor } from "@/lib/utils
 
 
 // We will define QUICK_ACTIONS inside the component so it can access setShowCreateModal
-// ── Component ─────────────────────────────────────────────────
+//  Component 
 export default function OwnerDashboard() {
   const router = useRouter();
   const supabase = createClient();
@@ -34,12 +34,12 @@ export default function OwnerDashboard() {
   const fetchDashboardData = async () => {
     const supabase = createClient();
     const [resProjects, resProgress, resMaterials] = await Promise.all([
-      supabase.from("projects").select("*").order("created_at", { ascending: false }),
+      supabase.from("projects").select("*, supervisor:users!supervisor_id(fullname)").order("created_at", { ascending: false }),
       supabase.from("project_progress").select("*").order("created_at", { ascending: false }),
       supabase.from("materials").select("*").order("current_stock", { ascending: true })
     ]);
     return {
-      projects: (resProjects.data || []) as Project[],
+      projects: (resProjects.data || []) as (Project & { supervisor?: { fullname: string } | null })[],
       progress: (resProgress.data || []) as ProjectProgress[],
       materials: (resMaterials.data || []) as Material[]
     };
@@ -54,9 +54,9 @@ export default function OwnerDashboard() {
   const activeProjects = projects.filter(p => p.status === "aktif").length;
   const completedProjects = projects.filter(p => p.status === "selesai").length;
   const pendingProjects = projects.filter(p => p.status === "tertunda" || p.status === "menunggu_validasi").length;
-  
+
   const lowStockMaterials = materials.filter(m => m.current_stock < m.minimum_stock).slice(0, 5);
-  
+
   const stats = {
     total_projects: projects.length,
     active_projects: activeProjects,
@@ -192,7 +192,7 @@ export default function OwnerDashboard() {
                     else if (act.notes === "Lokasi Tervalidasi" || (act.percentage === 0 && act.notes?.toLowerCase().includes("lokasi"))) {
                       title = "Lokasi Tervalidasi";
                     }
-                    
+
                     return (
                       <div
                         key={act.progress_id}
@@ -204,7 +204,7 @@ export default function OwnerDashboard() {
                           <span className="text-[10px] font-semibold text-right shrink-0" style={{ color: C.muted }}>{formatRelativeTime(act.created_at)}</span>
                         </div>
                         <p className="text-[11px] font-semibold" style={{ color: C.muted }}>
-                          {project?.project_name || "Proyek Tidak Diketahui"} {project?.client_name ? `- ${project.client_name}` : ""}
+                          {project?.project_name || "Proyek Tidak Diketahui"} {project?.supervisor?.fullname ? `- ${project.supervisor.fullname}` : ""}
                         </p>
                         {act.notes && act.notes !== "Lokasi Tervalidasi" && (
                           <p className="text-[11px] mt-1 italic truncate" style={{ color: C.muted }}>&quot;{act.notes}&quot;</p>

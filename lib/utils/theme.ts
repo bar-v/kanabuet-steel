@@ -1,11 +1,11 @@
 import { Material } from "@/lib/types/database";
 
 export const C = {
-  bg: "#F8FAFC", 
-  card: "#FFFFFF", 
+  bg: "#F8FAFC",
+  card: "#FFFFFF",
   border: "#E2E8F0",
-  text: "#0F172A", 
-  subtext: "#334155", 
+  text: "#0F172A",
+  subtext: "#334155",
   muted: "#64748B",
   sidebar: "#F1F5F9",
   header: "#FFFFFF",

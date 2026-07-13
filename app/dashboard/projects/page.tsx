@@ -26,7 +26,7 @@ const STATUS_FILTERS: { label: string; value: ProjectStatus | "semua" }[] = [
   { label: "Selesai", value: "selesai" },
 ];
 
-// ── Component ─────────────────────────────────────────────────
+//  Component 
 export default function ProjectManagementPage() {
   const router = useRouter();
   const supabase = createClient();

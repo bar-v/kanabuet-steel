@@ -53,7 +53,7 @@ export default function LoginPage() {
 
   return (
     <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden">
-      {/* ── Background image ── */}
+      {/*  Background image  */}
       <Image
         src="/images/login-bg.jpg"
         alt="Kanabuet Steel facility background"
@@ -63,10 +63,10 @@ export default function LoginPage() {
         quality={80}
       />
 
-      {/* ── Dim overlay ~85% ── */}
+      {/*  Dim overlay ~85%  */}
       <div className="absolute inset-0 bg-black/[0.88]" />
 
-      {/* ── Login card ── */}
+      {/*  Login card  */}
       <div className="relative z-10 w-full max-w-[460px] mx-4">
         {/* Brand block */}
         <div className="flex items-center gap-4 mb-10">

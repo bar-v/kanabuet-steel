@@ -9,7 +9,7 @@ export type ProjectStatus =
   | 'tertunda'
   | 'selesai';
 
-// ── Tabel: users ─────────────────────────────────────────────
+//  Tabel: users 
 export interface User {
   user_id: number;
   fullname: string;
@@ -21,7 +21,7 @@ export interface User {
   updated_at: string;
 }
 
-// ── Tabel: projects ──────────────────────────────────────────
+//  Tabel: projects 
 export interface Project {
   project_id: number;
   project_name: string;
@@ -44,7 +44,7 @@ export interface ProjectWithProgress extends Project {
   members_count?: number;
 }
 
-// ── Tabel: project_members ───────────────────────────────────
+// Tabel: project_members
 export interface ProjectMember {
   member_id: number;
   project_id: number;
@@ -60,7 +60,7 @@ export interface WorkerHistoryItem {
   project_role: string;
 }
 
-// ── Tabel: project_progress ──────────────────────────────────
+// Tabel: project_progress
 export interface ProjectProgress {
   progress_id: number;
   project_id: number;
@@ -76,7 +76,7 @@ export interface ProjectProgressWithUser extends ProjectProgress {
   users: Pick<User, 'fullname'> | null;
 }
 
-// ── Tabel: suppliers ─────────────────────────────────────────
+//  Tabel: suppliers 
 export interface Supplier {
   supplier_id: number;
   supplier_name: string;
@@ -84,7 +84,7 @@ export interface Supplier {
   address: string | null;
 }
 
-// ── Tabel: materials ─────────────────────────────────────────
+//  Tabel: materials 
 export interface Material {
   material_id: number;
   supplier_id: number | null;
@@ -107,7 +107,7 @@ export interface LowStockMaterial extends Material {
   stock_ratio: number; // current_stock / minimum_stock
 }
 
-// ── Tabel: material_usage ────────────────────────────────────
+//  Tabel: material_usage 
 export interface MaterialUsage {
   usage_id: number;
   project_id: number;
@@ -125,7 +125,7 @@ export interface MaterialUsageWithDetails extends MaterialUsage {
   projects: Pick<Project, 'project_name'> | null;
 }
 
-// ── Tabel: restocks ──────────────────────────────────────────
+//  Tabel: restocks 
 export interface Restock {
   restock_id: number;
   material_id: number;
@@ -142,7 +142,7 @@ export interface RestockWithDetails extends Restock {
   suppliers: Pick<Supplier, 'supplier_name'> | null;
 }
 
-// ── Form input types ──────────────────────────────────────────
+//  Form input types 
 
 export interface CreateProjectInput {
   project_name: string;
@@ -207,7 +207,7 @@ export interface CreateUserInput {
   system_role: SystemRole;
 }
 
-// ── Dashboard Stats ───────────────────────────────────────────
+//  Dashboard Stats 
 
 export interface DashboardStats {
   total_projects: number;

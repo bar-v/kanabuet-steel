@@ -44,7 +44,7 @@ export default function ProjectMembersPage({ params }: Props) {
   const fetchMembersData = async () => {
     if (!projectId) return null;
     const supabase = createClient();
-    
+
     // Fetch project details
     const { data: projectData } = await supabase
       .from('projects')
@@ -64,10 +64,10 @@ export default function ProjectMembersPage({ params }: Props) {
       .from('project_members')
       .select('member_name, phone_number, project_role');
 
-    const uniqueHistory: WorkerHistoryItem[] = historyData 
+    const uniqueHistory: WorkerHistoryItem[] = historyData
       ? historyData.filter((item, index, self) =>
-          index === self.findIndex((t) => t.member_name === item.member_name)
-        ).sort((a, b) => a.member_name.localeCompare(b.member_name))
+        index === self.findIndex((t) => t.member_name === item.member_name)
+      ).sort((a, b) => a.member_name.localeCompare(b.member_name))
       : [];
 
     return {
@@ -108,12 +108,12 @@ export default function ProjectMembersPage({ params }: Props) {
       let projectRole: string;
 
       if (formMode === 'dropdown' && selectedWorker) {
-        memberName  = selectedWorker.member_name;
+        memberName = selectedWorker.member_name;
         phoneNumber = selectedWorker.phone_number ?? null;
         projectRole = newRole || selectedWorker.project_role;
       } else {
         // Mode baru
-        memberName  = newName.trim();
+        memberName = newName.trim();
         phoneNumber = newPhone.trim() || null;
         projectRole = newRole.trim();
       }
@@ -266,7 +266,7 @@ export default function ProjectMembersPage({ params }: Props) {
         )}
       </main>
 
-      {/* ── Modal Tambah Anggota ── */}
+      {/*  Modal Tambah Anggota  */}
       {showModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => { setShowModal(false); resetForm(); }} />
@@ -281,22 +281,20 @@ export default function ProjectMembersPage({ params }: Props) {
               <button
                 type="button"
                 onClick={() => { setFormMode('dropdown'); setSelectedWorker(null); }}
-                className={`flex-1 py-2 rounded-lg text-sm font-semibold border transition-all ${
-                  formMode === 'dropdown'
+                className={`flex-1 py-2 rounded-lg text-sm font-semibold border transition-all ${formMode === 'dropdown'
                     ? 'bg-orange-500 border-orange-500 text-white'
                     : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                }`}
+                  }`}
               >
                 Pilih dari Histori
               </button>
               <button
                 type="button"
                 onClick={() => { setFormMode('new'); setSelectedWorker(null); }}
-                className={`flex-1 py-2 rounded-lg text-sm font-semibold border transition-all ${
-                  formMode === 'new'
+                className={`flex-1 py-2 rounded-lg text-sm font-semibold border transition-all ${formMode === 'new'
                     ? 'bg-orange-500 border-orange-500 text-white'
                     : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                }`}
+                  }`}
               >
                 + Pekerja Baru
               </button>

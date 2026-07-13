@@ -47,11 +47,11 @@ export default function EditProjectPage({ params }: Props) {
   const [endDate, setEndDate] = useState("");
   const [status, setStatus] = useState<ProjectStatus>("menunggu_validasi");
   const [supervisorId, setSupervisorId] = useState("");
-type GpsState =
-  | { status: "idle" }
-  | { status: "loading" }
-  | { status: "success" }
-  | { status: "error"; message: string };
+  type GpsState =
+    | { status: "idle" }
+    | { status: "loading" }
+    | { status: "success" }
+    | { status: "error"; message: string };
 
   const [position, setPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [gps, setGps] = useState<GpsState>({ status: "idle" });
@@ -264,7 +264,7 @@ type GpsState =
               className="w-full px-4 py-2.5 rounded-lg border text-sm font-medium outline-none focus:border-orange-500 transition-colors"
               style={{ borderColor: C.border }}
             >
-              <option value="">-- Belum Ditugaskan --</option>
+              <option value="">Belum Ditugaskan</option>
               {supervisors.map(s => (
                 <option key={s.user_id} value={s.user_id}>{s.fullname}</option>
               ))}
