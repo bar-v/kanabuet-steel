@@ -64,7 +64,7 @@ export default function LoginPage() {
       />
 
       {/*  Dim overlay ~85%  */}
-      <div className="absolute inset-0 bg-black/[0.88]" />
+      <div className="absolute inset-0 bg-white/90 backdrop-blur-[2px]" />
 
       {/*  Login card  */}
       <div className="relative z-10 w-full max-w-[460px] mx-4">
@@ -75,34 +75,34 @@ export default function LoginPage() {
             alt="Kanabuet Steel logo"
             width={64}
             height={64}
-            className="object-contain shrink-0 drop-shadow-[0_0_12px_rgba(249,115,22,0.4)]"
+            className="object-contain shrink-0 drop-shadow-sm"
             priority
           />
           <div className="flex flex-col">
-            <span className="font-black text-orange-500 text-3xl tracking-[1px] leading-none uppercase">
+            <span className="font-black text-orange-600 text-3xl tracking-[1px] leading-none uppercase">
               Kanabuet Steel
             </span>
-            <span className="text-slate-300 text-sm font-medium tracking-wide mt-1">
+            <span className="text-slate-600 text-sm font-medium tracking-wide mt-1">
               Fabrication Management System
             </span>
           </div>
         </div>
 
         {/* Card body */}
-        <div className="bg-[#0d1820]/80 backdrop-blur-md border border-white/[0.07] rounded-xl p-8 shadow-2xl">
+        <div className="bg-white/95 backdrop-blur-md border border-slate-200 rounded-2xl p-8 shadow-xl">
           {/* Welcome text */}
           <div className="mb-6">
-            <h1 className="font-bold text-[#d9e3f1] text-2xl tracking-tight leading-8">
+            <h1 className="font-bold text-slate-900 text-2xl tracking-tight leading-8">
               Selamat Datang
             </h1>
-            <p className="text-sm text-slate-400 leading-5 mt-1">
+            <p className="text-sm text-slate-500 leading-5 mt-1">
               Masuk ke portal manajemen Kanabuet Steel.
             </p>
           </div>
 
           {/* Error message */}
           {errorMsg && (
-            <div className="mb-4 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm font-medium">
+            <div className="mb-4 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm font-medium">
               {errorMsg}
             </div>
           )}
@@ -112,15 +112,15 @@ export default function LoginPage() {
             <div className="flex flex-col gap-2">
               <label
                 htmlFor="login-email"
-                className="text-xs font-bold text-slate-400 tracking-[0.6px] uppercase"
+                className="text-xs font-bold text-slate-700 tracking-[0.6px] uppercase"
               >
                 Alamat Email
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
                   <svg width="16" height="13" viewBox="0 0 16 13" fill="none" aria-hidden="true">
-                    <rect x="0.5" y="0.5" width="15" height="12" rx="1.5" stroke="#64748B" />
-                    <path d="M1 1.5L8 7.5L15 1.5" stroke="#64748B" strokeLinecap="round" />
+                    <rect x="0.5" y="0.5" width="15" height="12" rx="1.5" stroke="#94A3B8" />
+                    <path d="M1 1.5L8 7.5L15 1.5" stroke="#94A3B8" strokeLinecap="round" />
                   </svg>
                 </span>
                 <input
@@ -131,7 +131,7 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="nama@kanabuet.com"
-                  className="w-full pl-10 pr-4 py-3 bg-[#121d26] border border-[#33415580] rounded-lg text-base text-slate-300 placeholder-slate-600 outline-none focus:border-orange-500/70 focus:ring-1 focus:ring-orange-500/30 transition-colors duration-200"
+                  className="w-full pl-10 pr-4 py-3 bg-white border border-slate-300 rounded-lg text-base text-slate-900 placeholder-slate-400 outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors duration-200"
                 />
               </div>
             </div>
@@ -140,16 +140,16 @@ export default function LoginPage() {
             <div className="flex flex-col gap-2">
               <label
                 htmlFor="login-password"
-                className="text-xs font-bold text-slate-400 tracking-[0.6px] uppercase"
+                className="text-xs font-bold text-slate-700 tracking-[0.6px] uppercase"
               >
                 Kata Sandi
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
                   <svg width="13" height="16" viewBox="0 0 13 16" fill="none" aria-hidden="true">
-                    <rect x="0.5" y="6.5" width="12" height="9" rx="1.5" stroke="#64748B" />
-                    <path d="M3.5 6.5V4.5C3.5 2.84315 4.84315 1.5 6.5 1.5C8.15685 1.5 9.5 2.84315 9.5 4.5V6.5" stroke="#64748B" strokeLinecap="round" />
-                    <circle cx="6.5" cy="11" r="1" fill="#64748B" />
+                    <rect x="0.5" y="6.5" width="12" height="9" rx="1.5" stroke="#94A3B8" />
+                    <path d="M3.5 6.5V4.5C3.5 2.84315 4.84315 1.5 6.5 1.5C8.15685 1.5 9.5 2.84315 9.5 4.5V6.5" stroke="#94A3B8" strokeLinecap="round" />
+                    <circle cx="6.5" cy="11" r="1" fill="#94A3B8" />
                   </svg>
                 </span>
                 <input
@@ -160,13 +160,13 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-11 py-3 bg-[#121d26] border border-[#33415580] rounded-lg text-base text-slate-300 placeholder-slate-600 outline-none focus:border-orange-500/70 focus:ring-1 focus:ring-orange-500/30 transition-colors duration-200"
+                  className="w-full pl-10 pr-11 py-3 bg-white border border-slate-300 rounded-lg text-base text-slate-900 placeholder-slate-400 outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors duration-200"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
                   aria-label={showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
                 >
                   {showPassword ? (
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -212,7 +212,7 @@ export default function LoginPage() {
         </div>
 
         {/* Footer note */}
-        <p className="text-center text-xs text-slate-600 mt-6">
+        <p className="text-center text-xs text-slate-500 mt-6 font-medium drop-shadow-sm">
           © {new Date().getFullYear()} Kanabuet Steel. Hak cipta dilindungi.
         </p>
       </div>
