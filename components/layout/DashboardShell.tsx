@@ -3,10 +3,11 @@
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { LogOut, Menu, X, ArrowLeft } from "lucide-react";
+import { LogOut, Menu, X, ArrowLeft, Settings } from "lucide-react";
 import { OWNER_NAV, SUPERVISOR_NAV, isNavActive } from "@/lib/config/navigation";
 import type { User } from "@/lib/types/database";
 import { useLogout } from "@/lib/auth/client";
+import EditProfileModal from "./EditProfileModal";
 
 import { C } from "@/lib/utils/theme";
 
@@ -31,6 +32,7 @@ export default function DashboardShell({
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
 
   const [isAuthorized, setIsAuthorized] = useState(false);
 
@@ -169,18 +171,23 @@ export default function DashboardShell({
         </nav>
 
         <div className="border-t p-4" style={{ borderColor: C.border }}>
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-9 h-9 rounded-full bg-orange-500/20 border border-orange-500/30 flex items-center justify-center text-orange-400 font-bold text-sm">
+          <div 
+            className="flex items-center gap-3 mb-3 group cursor-pointer hover:bg-slate-100/50 p-2 -mx-2 rounded-xl transition-colors" 
+            onClick={() => setIsEditProfileOpen(true)}
+            title="Edit Profil"
+          >
+            <div className="w-9 h-9 rounded-full bg-orange-500/20 border border-orange-500/30 flex items-center justify-center text-orange-400 font-bold text-sm shrink-0">
               {initials}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold truncate" style={{ color: C.text }}>
+              <p className="text-sm font-bold truncate group-hover:text-orange-500 transition-colors" style={{ color: C.text }}>
                 {user?.fullname ?? "Memuat..."}
               </p>
               <p className="text-[11px] font-medium capitalize" style={{ color: C.muted }}>
                 {role === "owner" ? "Pemilik" : "Pengawas"}
               </p>
             </div>
+            <Settings size={15} className="text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
           <button
             onClick={handleLogout}
@@ -244,6 +251,16 @@ export default function DashboardShell({
           <div className="h-6 lg:h-2" />
         </main>
       </div>
+
+      {/* ═══════════ MODALS ═══════════ */}
+      {user && (
+        <EditProfileModal
+          user={user}
+          isOpen={isEditProfileOpen}
+          onClose={() => setIsEditProfileOpen(false)}
+          onSuccess={(updatedUser) => setUser(updatedUser)}
+        />
+      )}
     </div>
   );
 }
