@@ -16,7 +16,7 @@ export async function loginAction(formData: FormData) {
   const { data: user, error } = await supabaseAdmin
     .from("users")
     .select("user_id, system_role, password_hash, is_active")
-    .eq("email", email)
+    .ilike("email", email)
     .single();
 
   if (error || !user) {

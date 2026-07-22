@@ -47,7 +47,7 @@ export async function PUT(request: Request) {
       const { data: existingUser } = await supabaseAdmin
         .from("users")
         .select("user_id")
-        .eq("email", email)
+        .ilike("email", email)
         .neq("user_id", session.userId)
         .single();
 
