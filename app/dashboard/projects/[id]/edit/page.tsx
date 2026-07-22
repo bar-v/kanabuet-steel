@@ -157,6 +157,29 @@ export default function EditProjectPage({ params }: Props) {
     e.preventDefault();
     if (!projectId) return;
     setIsSubmitting(true);
+
+    if (projectName.length > 150) {
+      showToast("Nama Proyek maksimal 150 karakter.", "error");
+      setIsSubmitting(false);
+      return;
+    }
+    if (clientName.length > 100) {
+      showToast("Nama Klien maksimal 100 karakter.", "error");
+      setIsSubmitting(false);
+      return;
+    }
+    if (clientPhone && clientPhone.length > 20) {
+      showToast("Nomor HP Klien maksimal 20 karakter.", "error");
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (startDate && endDate && new Date(endDate) < new Date(startDate)) {
+      showToast("Tenggat waktu tidak boleh lebih awal dari tanggal mulai.", "error");
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from("projects")
@@ -291,6 +314,7 @@ export default function EditProjectPage({ params }: Props) {
           <div>
             <label className="block mb-1.5 text-xs font-bold uppercase tracking-wide" style={{ color: C.muted }}>Tenggat Waktu</label>
             <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)}
+              min={startDate || undefined}
               className="w-full px-4 py-2.5 rounded-lg border text-sm font-medium outline-none focus:border-orange-500 transition-colors"
               style={{ borderColor: C.border, background: C.card }} />
           </div>

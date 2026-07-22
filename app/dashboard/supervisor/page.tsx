@@ -255,29 +255,8 @@ export default function SupervisorDashboard() {
           <h2 className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: C.muted }}>Aktivitas Terbaru</h2>
           <div className="rounded-xl border divide-y" style={{ background: C.card, borderColor: C.border }}>
             {recentActivities.map((activity) => {
-              let Icon = Activity;
-              let colorClass = "text-orange-600";
-              let bgClass = "bg-orange-50";
-
-              if (activity.type === 'photo') {
-                Icon = Upload;
-                colorClass = "text-sky-600";
-                bgClass = "bg-sky-50";
-              } else if (activity.type === 'validation') {
-                Icon = MapPin;
-                colorClass = "text-emerald-600";
-                bgClass = "bg-emerald-50";
-              } else if (activity.type === 'note') {
-                Icon = FileText;
-                colorClass = "text-violet-600";
-                bgClass = "bg-violet-50";
-              }
-
               return (
                 <div key={activity.id} className="flex items-center gap-4 p-5" style={{ borderColor: C.border }}>
-                  <span className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${bgClass} ${colorClass}`}>
-                    <Icon size={20} strokeWidth={2} />
-                  </span>
                   <div className="flex-1 min-w-0 flex flex-col justify-center">
                     <p className="text-[15px] font-semibold leading-snug" style={{ color: C.text }}>
                       {activity.title}

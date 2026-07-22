@@ -133,6 +133,28 @@ export default function CreateProjectModal({ onClose, onSuccess }: CreateProject
     e.preventDefault();
     setIsSubmitting(true);
 
+    if (namaProyek.length > 150) {
+      showToast("Nama Proyek maksimal 150 karakter.", "error");
+      setIsSubmitting(false);
+      return;
+    }
+    if (clientName.length > 100) {
+      showToast("Nama Klien maksimal 100 karakter.", "error");
+      setIsSubmitting(false);
+      return;
+    }
+    if (clientPhone && clientPhone.length > 20) {
+      showToast("Nomor HP Klien maksimal 20 karakter.", "error");
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (startDate && endDate && new Date(endDate) < new Date(startDate)) {
+      showToast("Tenggat waktu tidak boleh lebih awal dari tanggal mulai.", "error");
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       const payload: CreateProjectInput = {
         project_name: namaProyek,
@@ -263,6 +285,7 @@ export default function CreateProjectModal({ onClose, onSuccess }: CreateProject
                   className="w-full px-4 py-2.5 border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 focus:outline-none text-sm transition-all"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
+                  min={startDate || undefined}
                 />
               </div>
             </div>

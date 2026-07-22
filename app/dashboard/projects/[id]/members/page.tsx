@@ -120,6 +120,23 @@ export default function ProjectMembersPage({ params }: Props) {
 
       if (!memberName || !projectRole) {
         showToast('Nama dan jabatan wajib diisi.', 'error');
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (memberName.length > 100) {
+        showToast("Nama pekerja maksimal 100 karakter.", "error");
+        setIsSubmitting(false);
+        return;
+      }
+      if (phoneNumber && phoneNumber.length > 20) {
+        showToast("Nomor HP maksimal 20 karakter.", "error");
+        setIsSubmitting(false);
+        return;
+      }
+      if (projectRole.length > 50) {
+        showToast("Jabatan maksimal 50 karakter.", "error");
+        setIsSubmitting(false);
         return;
       }
 

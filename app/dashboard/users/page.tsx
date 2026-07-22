@@ -87,6 +87,17 @@ export default function UserManagementPage() {
         return;
       }
 
+      if (formName.length > 100) {
+        setErrorMessage("Nama lengkap maksimal 100 karakter.");
+        setIsSubmitting(false);
+        return;
+      }
+      if (formEmail.length > 100) {
+        setErrorMessage("Email maksimal 100 karakter.");
+        setIsSubmitting(false);
+        return;
+      }
+
       if (!editingUser && !formPassword) {
         setErrorMessage("Password wajib diisi untuk pengawas baru.");
         setIsSubmitting(false);

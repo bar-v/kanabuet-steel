@@ -53,6 +53,18 @@ export default function SupplierManagementPage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+
+    if (formName.length > 100) {
+      showToast("Nama supplier maksimal 100 karakter.", "error");
+      setIsSubmitting(false);
+      return;
+    }
+    if (formPhone && formPhone.length > 20) {
+      showToast("Nomor telepon maksimal 20 karakter.", "error");
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       const payload = {
         supplier_name: formName,

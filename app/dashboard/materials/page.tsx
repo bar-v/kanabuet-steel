@@ -310,6 +310,23 @@ export default function MaterialManagementPage() {
   const handleSaveMaterial = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+
+    if (formName.length > 100) {
+      showToast("Nama material maksimal 100 karakter.", "error");
+      setIsSubmitting(false);
+      return;
+    }
+    if (formCategory && formCategory.length > 50) {
+      showToast("Kategori maksimal 50 karakter.", "error");
+      setIsSubmitting(false);
+      return;
+    }
+    if (formUnit.length > 30) {
+      showToast("Satuan maksimal 30 karakter.", "error");
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       const payload = {
         material_name: formName,
