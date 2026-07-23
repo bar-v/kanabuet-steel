@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@/lib/types/database";
+import { createUserAction, updateUserAction, toggleUserActiveAction } from "./actions";
 import DashboardShell from "@/components/layout/DashboardShell";
 import StatCard from "@/components/ui/StatCard";
 import useSWR, { mutate } from "swr";
@@ -125,8 +126,8 @@ export default function UserManagementPage() {
           const { hash } = await res.json();
           payload.password_hash = hash;
         }
-        const { error } = await supabase.from("users").update(payload).eq("user_id", editingUser.user_id);
-        if (error) throw error;
+        const result = await updateUserAction(editingUser.user_id, payload);
+        if (result.error) throw new Error(result.error);
       } else {
         // Create new supervisor
         const res = await fetch("/api/auth/hash-password", {
@@ -136,14 +137,14 @@ export default function UserManagementPage() {
         });
         const { hash } = await res.json();
 
-        const { error } = await supabase.from("users").insert([{
+        const result = await createUserAction({
           fullname: formName,
           email: formEmail,
           password_hash: hash,
           system_role: "supervisor",
           is_active: true,
-        }]);
-        if (error) throw error;
+        });
+        if (result.error) throw new Error(result.error);
       }
       setShowModal(false);
       resetForm();
@@ -164,8 +165,8 @@ export default function UserManagementPage() {
     const action = u.is_active ? "Nonaktifkan" : "Aktifkan";
     const confirmed = await showConfirm(`${action} pengawas`, `Apakah Anda yakin ingin ${action.toLowerCase()} pengawas "${u.fullname}"?`);
     if (!confirmed) return;
-    const { error } = await supabase.from("users").update({ is_active: !u.is_active }).eq("user_id", u.user_id);
-    if (error) { showToast("Gagal: " + error.message, "error"); return; }
+    const result = await toggleUserActiveAction(u.user_id, u.is_active);
+    if (result.error) { showToast("Gagal: " + result.error, "error"); return; }
     mutate('admin_users');
     showToast(`Berhasil ${action.toLowerCase()} pengawas ${u.fullname}`, "success");
   };
@@ -311,18 +312,18 @@ export default function UserManagementPage() {
                 </div>
               )}
               <div>
-                <label className="text-xs font-bold text-slate-700 ml-1">Nama Lengkap *</label>
+                <label className="text-xs font-bold text-slate-700 ml-1">Nama Lengkap <span className="text-red-500">*</span></label>
                 <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} required placeholder="mis. Ahmad Pengawas"
                   className="w-full mt-1 px-4 py-2.5 rounded-xl border text-sm font-medium outline-none focus:border-orange-500" style={{ borderColor: C.border }} />
               </div>
               <div>
-                <label className="text-xs font-bold text-slate-700 ml-1">Email *</label>
+                <label className="text-xs font-bold text-slate-700 ml-1">Email <span className="text-red-500">*</span></label>
                 <input type="email" value={formEmail} onChange={(e) => setFormEmail(e.target.value)} required placeholder="mis. pengawas@kanabuet.com"
                   className="w-full mt-1 px-4 py-2.5 rounded-xl border text-sm font-medium outline-none focus:border-orange-500" style={{ borderColor: C.border }} />
               </div>
               <div>
                 <label className="text-xs font-bold text-slate-700 ml-1">
-                  Password {editingUser ? "(kosongkan jika tidak diubah)" : "*"}
+                  Password {editingUser ? "(kosongkan jika tidak diubah)" : <span className="text-red-500">*</span>}
                 </label>
                 <div className="relative mt-1">
                   <input type={showPassword ? "text" : "password"} value={formPassword} onChange={(e) => setFormPassword(e.target.value)}

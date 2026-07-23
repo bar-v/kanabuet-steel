@@ -608,7 +608,7 @@ export default function MaterialManagementPage() {
             </div>
             <form onSubmit={handleSaveMaterial} className="flex-1 overflow-y-auto p-6 space-y-4">
               <div>
-                <label className="text-xs font-bold text-slate-700 ml-1">Nama Material *</label>
+                <label className="text-xs font-bold text-slate-700 ml-1">Nama Material <span className="text-red-500">*</span></label>
                 <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} required placeholder="mis. Besi Hollow 4x4 cm"
                   className="w-full mt-1 px-4 py-2.5 rounded-xl border text-sm font-medium outline-none focus:border-orange-500" style={{ borderColor: C.border }} />
               </div>
@@ -624,7 +624,7 @@ export default function MaterialManagementPage() {
                     className="w-full mt-1 px-4 py-2.5 rounded-xl border text-sm font-medium outline-none focus:border-orange-500" style={{ borderColor: C.border }} />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-700 ml-1">Satuan *</label>
+                  <label className="text-xs font-bold text-slate-700 ml-1">Satuan <span className="text-red-500">*</span></label>
                   <select value={formUnit} onChange={(e) => setFormUnit(e.target.value)} required
                     className="w-full mt-1 px-4 py-2.5 rounded-xl border text-sm font-medium outline-none focus:border-orange-500 bg-white" style={{ borderColor: C.border }}>
                     <option value="">Pilih Satuan</option>
@@ -744,7 +744,7 @@ export default function MaterialManagementPage() {
               <form onSubmit={handleRestockInitiate} className="p-6 space-y-4">
                 {isQuickRestock && (
                   <div>
-                    <label className="text-xs font-bold text-slate-700 ml-1">Pilih Material *</label>
+                    <label className="text-xs font-bold text-slate-700 ml-1">Pilih Material <span className="text-red-500">*</span></label>
                     <MaterialSearchSelect
                       materials={materials}
                       value={restockMaterial?.material_id || ""}
@@ -775,7 +775,7 @@ export default function MaterialManagementPage() {
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="text-xs font-bold text-slate-700 ml-1">Jumlah Restock *</label>
+                        <label className="text-xs font-bold text-slate-700 ml-1">Jumlah Restock <span className="text-red-500">*</span></label>
                         <div className="relative mt-1">
                           <input type="number" min="1" value={restockQty} onChange={(e) => setRestockQty(e.target.value === "" ? "" : Number(e.target.value))} placeholder="0" required
                             className="w-full pl-4 pr-16 py-3 rounded-xl border text-sm font-bold outline-none focus:border-emerald-500" style={{ borderColor: C.border }} />

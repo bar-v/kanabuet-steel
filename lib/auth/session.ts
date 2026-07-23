@@ -9,7 +9,7 @@ export async function encrypt(payload: any) {
   return await new SignJWT(payload)
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
-    .setExpirationTime("1 day from now")
+    .setExpirationTime("1 hour from now")
     .sign(key);
 }
 
@@ -22,7 +22,7 @@ export async function decrypt(input: string): Promise<any> {
 }
 
 export async function createSession(userId: number, systemRole: string) {
-  const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  const expires = new Date(Date.now() + 1 * 60 * 60 * 1000);
   const session = await encrypt({ userId, systemRole, expires });
 
   // Panggil await cookies() di Next.js 15+ sebelum menggunakan set/get

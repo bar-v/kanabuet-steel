@@ -7,6 +7,7 @@ import type { CreateProjectInput, ProjectStatus } from "@/lib/types/database";
 import { X } from "lucide-react";
 import { formatAddressFromNominatim } from "@/lib/utils/formatters";
 import { useUI } from "@/contexts/UIContext";
+import CustomSelect from "@/components/ui/CustomSelect";
 
 // Dynamic import for Leaflet map to avoid SSR issues
 const DynamicMapPicker = dynamic(() => import("@/components/MapPicker"), {
@@ -205,7 +206,7 @@ export default function CreateProjectModal({ onClose, onSuccess }: CreateProject
             {/* Informasi Proyek */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="md:col-span-2">
-                <label className="block mb-1.5 font-bold text-xs text-slate-700">Nama Proyek *</label>
+                <label className="block mb-1.5 font-bold text-xs text-slate-700">Nama Proyek <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   className="w-full px-4 py-2.5 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 focus:outline-none text-sm transition-all"
@@ -217,7 +218,7 @@ export default function CreateProjectModal({ onClose, onSuccess }: CreateProject
               </div>
 
               <div>
-                <label className="block mb-1.5 font-bold text-xs text-slate-700">Nama Klien *</label>
+                <label className="block mb-1.5 font-bold text-xs text-slate-700">Nama Klien <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   className="w-full px-4 py-2.5 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 focus:outline-none text-sm transition-all"
@@ -254,16 +255,15 @@ export default function CreateProjectModal({ onClose, onSuccess }: CreateProject
             {/* Supervisor */}
             <div>
               <label className="block mb-1.5 font-bold text-xs text-slate-700">Pengawas Proyek (Opsional)</label>
-              <select
-                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 focus:outline-none text-sm transition-all"
+              <CustomSelect
                 value={selectedSupervisorId}
-                onChange={(e) => setSelectedSupervisorId(e.target.value)}
-              >
-                <option value="">Kosongkan / Pilih Nanti</option>
-                {supervisors.map((s) => (
-                  <option key={s.user_id} value={s.user_id}>{s.fullname}</option>
-                ))}
-              </select>
+                onChange={setSelectedSupervisorId}
+                placeholder="Kosongkan / Pilih Nanti"
+                options={[
+                  { value: "", label: "Kosongkan / Pilih Nanti" },
+                  ...supervisors.map((s) => ({ value: s.user_id, label: s.fullname }))
+                ]}
+              />
               <p className="text-[11px] text-slate-500 mt-1">Jika diisi, proyek akan langsung masuk ke dashboard pengawas tersebut.</p>
             </div>
 
@@ -298,7 +298,7 @@ export default function CreateProjectModal({ onClose, onSuccess }: CreateProject
               </div>
 
               <div>
-                <label className="block mb-1.5 font-bold text-xs text-slate-700">Alamat Proyek *</label>
+                <label className="block mb-1.5 font-bold text-xs text-slate-700">Alamat Proyek <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   className="w-full px-4 py-2.5 border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-orange-500 focus:border-orange-500 focus:outline-none text-sm transition-all"

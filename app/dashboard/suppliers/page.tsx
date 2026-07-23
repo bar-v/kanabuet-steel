@@ -201,7 +201,7 @@ export default function SupplierManagementPage() {
             </div>
             <form onSubmit={handleSave} className="flex-1 overflow-y-auto p-6 space-y-4">
               <div>
-                <label className="text-xs font-bold text-slate-700 ml-1">Nama Supplier *</label>
+                <label className="text-xs font-bold text-slate-700 ml-1">Nama Supplier <span className="text-red-500">*</span></label>
                 <input type="text" value={formName} onChange={(e) => setFormName(e.target.value)} required placeholder="mis. PT. Baja Utama"
                   className="w-full mt-1 px-4 py-2.5 rounded-xl border text-sm font-medium outline-none focus:border-orange-500" style={{ borderColor: C.border }} />
               </div>
