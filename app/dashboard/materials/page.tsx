@@ -16,9 +16,11 @@ import { formatRupiah } from "@/lib/utils/formatters";
 import { C, getStockStatus, getStockStatusBadge as getStatusBadge, getStockStatusLabel as getStatusLabel } from "@/lib/utils/theme";
 import { useUI } from "@/contexts/UIContext";
 
+import CustomSelect from "@/components/ui/CustomSelect";
+import MaterialSearchSelect from "@/components/ui/MaterialSearchSelect";
 
-
-const standardUnits = ["Batang", "Kg", "Lembar", "Kaleng", "Pcs"];
+const standardUnits = ["Batang", "Kg", "Lembar", "Kaleng", "Box", "Pcs"];
+const standardCategories = ["Baja", "Besi", "Atap / Seng", "Semen", "Kayu", "Cat", "Perkakas"];
 
 // Component for searchable supplier dropdown
 function SupplierSearchSelect({
@@ -131,101 +133,6 @@ function SupplierSearchSelect({
   );
 }
 
-function MaterialSearchSelect({
-  materials,
-  value,
-  onChange,
-  borderColor,
-}: {
-  materials: MaterialWithSupplier[];
-  value: number | "";
-  onChange: (value: number | "") => void;
-  borderColor: string;
-}) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const selectedMaterial = materials.find((m) => m.material_id === value);
-
-  const filteredMaterials = materials.filter((m) =>
-    m.material_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (m.specification || "").toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (!target.closest(".material-search-container")) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener("click", handleClickOutside);
-    return () => document.removeEventListener("click", handleClickOutside);
-  }, [isOpen]);
-
-  return (
-    <div className="relative material-search-container mt-1">
-      <button
-        type="button"
-        onClick={() => {
-          setIsOpen(!isOpen);
-          setSearchQuery("");
-        }}
-        className="w-full px-4 py-3 rounded-xl border text-sm font-bold outline-none text-left flex items-center justify-between bg-white focus:border-emerald-500 transition-all"
-        style={{ borderColor }}
-      >
-        <span className={selectedMaterial ? "text-slate-900" : "text-slate-400"}>
-          {selectedMaterial ? `${selectedMaterial.material_name}${selectedMaterial.specification ? ' - ' + selectedMaterial.specification : ''}` : "Pilih Material..."}
-        </span>
-        <ChevronDown size={16} className={`text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
-      </button>
-
-      {isOpen && (
-        <div
-          className="absolute z-[110] left-0 right-0 mt-1 bg-white border rounded-xl shadow-xl overflow-hidden flex flex-col max-h-60 animate-in fade-in slide-in-from-top-1 duration-150"
-          style={{ borderColor }}
-        >
-          <div className="p-2 border-b flex items-center gap-2 bg-slate-50" style={{ borderColor }}>
-            <Search size={14} className="text-slate-400 shrink-0" />
-            <input
-              type="text"
-              placeholder="Cari material..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-transparent text-sm outline-none font-medium text-slate-800"
-              autoFocus
-            />
-          </div>
-
-          <div className="overflow-y-auto flex-1 divide-y divide-slate-100 max-h-48">
-            {filteredMaterials.length === 0 ? (
-              <div className="px-4 py-3 text-xs text-slate-400 text-center font-medium">
-                Material tidak ditemukan
-              </div>
-            ) : (
-              filteredMaterials.map((m) => (
-                <button
-                  key={m.material_id}
-                  type="button"
-                  onClick={() => {
-                    onChange(m.material_id);
-                    setIsOpen(false);
-                  }}
-                  className={`w-full px-4 py-2.5 text-left text-sm transition-colors flex items-center justify-between hover:bg-emerald-50/30
-                    ${m.material_id === value ? "bg-emerald-50/50 font-bold text-emerald-600" : "text-slate-700"}`}
-                >
-                  <span className="truncate pr-4">{m.material_name}{m.specification ? ` - ${m.specification}` : ''}</span>
-                  {m.material_id === value && <Check size={14} className="text-emerald-500 shrink-0" />}
-                </button>
-              ))
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
 
 export default function MaterialManagementPage() {
   const router = useRouter();
@@ -260,6 +167,7 @@ export default function MaterialManagementPage() {
   const [formName, setFormName] = useState("");
   const [formSpecification, setFormSpecification] = useState("");
   const [formCategory, setFormCategory] = useState("");
+  const [formCategoryOption, setFormCategoryOption] = useState("");
   const [formUnit, setFormUnit] = useState("");
   const [formStock, setFormStock] = useState<number | "">("");
   const [formMinStock, setFormMinStock] = useState<number | "">("");
@@ -279,7 +187,7 @@ export default function MaterialManagementPage() {
   }, []);
 
   const resetForm = () => {
-    setFormName(""); setFormSpecification(""); setFormCategory(""); setFormUnit(""); setFormStock(""); setFormMinStock(""); setFormSupplierId(""); setFormUnitPrice("");
+    setFormName(""); setFormSpecification(""); setFormCategory(""); setFormCategoryOption(""); setFormUnit(""); setFormStock(""); setFormMinStock(""); setFormSupplierId(""); setFormUnitPrice("");
     setEditingMaterial(null);
   };
 
@@ -289,6 +197,13 @@ export default function MaterialManagementPage() {
     setFormName(m.material_name);
     setFormSpecification(m.specification ?? "");
     setFormCategory(m.category ?? "");
+    if (!m.category) {
+      setFormCategoryOption("");
+    } else if (standardCategories.includes(m.category)) {
+      setFormCategoryOption(m.category);
+    } else {
+      setFormCategoryOption("Lainnya");
+    }
     setFormUnit(m.unit);
     setFormStock(m.current_stock === 0 ? "" : m.current_stock);
     setFormMinStock(m.minimum_stock === 0 ? "" : m.minimum_stock);
@@ -316,6 +231,16 @@ export default function MaterialManagementPage() {
       setIsSubmitting(false);
       return;
     }
+    if (!formCategoryOption) {
+      showToast("Kategori material wajib dipilih.", "error");
+      setIsSubmitting(false);
+      return;
+    }
+    if (formCategoryOption === "Lainnya" && !formCategory) {
+      showToast("Nama kategori lainnya wajib diisi.", "error");
+      setIsSubmitting(false);
+      return;
+    }
     if (formCategory && formCategory.length > 50) {
       showToast("Kategori maksimal 50 karakter.", "error");
       setIsSubmitting(false);
@@ -323,6 +248,16 @@ export default function MaterialManagementPage() {
     }
     if (formUnit.length > 30) {
       showToast("Satuan maksimal 30 karakter.", "error");
+      setIsSubmitting(false);
+      return;
+    }
+    if (Number(formMinStock) === 0) {
+      showToast("Batas stok minimum tidak boleh 0.", "error");
+      setIsSubmitting(false);
+      return;
+    }
+    if (Number(formUnitPrice) === 0) {
+      showToast("Harga beli satuan tidak boleh 0.", "error");
       setIsSubmitting(false);
       return;
     }
@@ -432,7 +367,7 @@ export default function MaterialManagementPage() {
   ];
 
   return (
-    <DashboardShell title="Material Management" subtitle="Pantau stok dan kebutuhan bahan baku bengkel">
+    <DashboardShell title="Manajemen Material" subtitle="Pantau stok dan kebutuhan bahan baku bengkel">
       <div className="space-y-4 sm:space-y-5 -mt-2">
         {/* Quick Actions */}
         <section className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -488,9 +423,6 @@ export default function MaterialManagementPage() {
               {criticalStocks.map((item) => (
                 <div key={item.material_id}
                   className="min-w-[280px] sm:min-w-[320px] snap-start p-4 rounded-xl border border-amber-200 bg-amber-50/30 flex items-center gap-4 shadow-sm hover:shadow-md transition-all">
-                  <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 shrink-0">
-                    <Package size={24} />
-                  </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="text-sm font-bold truncate pr-6" style={{ color: C.text }}>{item.material_name}</h3>
                     {item.specification && <p className="text-[10px] font-semibold text-sky-600 truncate">{item.specification}</p>}
@@ -619,22 +551,38 @@ export default function MaterialManagementPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-bold text-slate-700 ml-1">Kategori</label>
-                  <input type="text" value={formCategory} onChange={(e) => setFormCategory(e.target.value)} placeholder="mis. Baja"
-                    className="w-full mt-1 px-4 py-2.5 rounded-xl border text-sm font-medium outline-none focus:border-orange-500" style={{ borderColor: C.border }} />
+                  <label className="text-xs font-bold text-slate-700 ml-1">Kategori Material <span className="text-red-500">*</span></label>
+                  <CustomSelect
+                    value={formCategoryOption}
+                    onChange={(val) => {
+                      setFormCategoryOption(val);
+                      if (val !== "Lainnya") setFormCategory(val);
+                      else setFormCategory("");
+                    }}
+                    placeholder="Pilih Kategori"
+                    options={[
+                      { value: "", label: "Pilih Kategori" },
+                      ...standardCategories.map(c => ({ value: c, label: c })),
+                      { value: "Lainnya", label: "Lainnya..." }
+                    ]}
+                  />
+                  {formCategoryOption === "Lainnya" && (
+                    <input type="text" value={formCategory} onChange={(e) => setFormCategory(e.target.value)} placeholder="Sebutkan kategori..." required
+                      className="w-full mt-2 px-4 py-2.5 rounded-xl border text-sm font-medium outline-none focus:border-orange-500" style={{ borderColor: C.border }} />
+                  )}
                 </div>
                 <div>
                   <label className="text-xs font-bold text-slate-700 ml-1">Satuan <span className="text-red-500">*</span></label>
-                  <select value={formUnit} onChange={(e) => setFormUnit(e.target.value)} required
-                    className="w-full mt-1 px-4 py-2.5 rounded-xl border text-sm font-medium outline-none focus:border-orange-500 bg-white" style={{ borderColor: C.border }}>
-                    <option value="">Pilih Satuan</option>
-                    {standardUnits.map((u) => (
-                      <option key={u} value={u}>{u}</option>
-                    ))}
-                    {formUnit && !standardUnits.includes(formUnit) ? (
-                      <option value={formUnit}>{formUnit}</option>
-                    ) : null}
-                  </select>
+                  <CustomSelect
+                    value={formUnit}
+                    onChange={setFormUnit}
+                    placeholder="Pilih Satuan"
+                    options={[
+                      { value: "", label: "Pilih Satuan" },
+                      ...standardUnits.map((u) => ({ value: u, label: u })),
+                      ...(formUnit && !standardUnits.includes(formUnit) ? [{ value: formUnit, label: formUnit }] : [])
+                    ]}
+                  />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -644,19 +592,19 @@ export default function MaterialManagementPage() {
                     className="w-full mt-1 px-4 py-2.5 rounded-xl border text-sm font-bold outline-none focus:border-orange-500" style={{ borderColor: C.border }} />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-700 ml-1">Minimum</label>
-                  <input type="number" min="0" value={formMinStock} onChange={(e) => setFormMinStock(e.target.value === "" ? "" : Number(e.target.value))} placeholder="0"
+                  <label className="text-xs font-bold text-slate-700 ml-1">Batas Stok Minimum <span className="text-red-500">*</span></label>
+                  <input type="number" min="1" value={formMinStock} onChange={(e) => setFormMinStock(e.target.value === "" ? "" : Number(e.target.value))} placeholder="mis. 10" required
                     className="w-full mt-1 px-4 py-2.5 rounded-xl border text-sm font-bold outline-none focus:border-orange-500" style={{ borderColor: C.border }} />
                 </div>
               </div>
               <div>
-                <label className="text-xs font-bold text-slate-700 ml-1">Harga Satuan</label>
+                <label className="text-xs font-bold text-slate-700 ml-1">Harga Beli Satuan <span className="text-red-500">*</span></label>
                 <div className="relative mt-1">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">Rp</span>
                   <input type="text" value={formUnitPrice !== "" ? formUnitPrice.toLocaleString("id-ID") : ""} onChange={(e) => {
                     const val = e.target.value.replace(/[^0-9]/g, "");
                     setFormUnitPrice(val === "" ? "" : Number(val));
-                  }} placeholder="0"
+                  }} placeholder="0" required
                     className="w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm font-bold outline-none focus:border-orange-500" style={{ borderColor: C.border }} />
                 </div>
               </div>

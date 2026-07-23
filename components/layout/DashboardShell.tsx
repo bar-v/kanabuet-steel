@@ -39,10 +39,10 @@ export default function DashboardShell({
   useEffect(() => {
     fetch("/api/auth/me")
       .then((res) => res.json())
-      .then(({ user }) => { 
+      .then(({ user }) => {
         if (user) {
           const isSupervisorRoute = pathname.startsWith('/dashboard/supervisor');
-          
+
           if (user.system_role === 'supervisor' && !isSupervisorRoute) {
             window.location.replace('/dashboard/supervisor');
             return;
@@ -130,7 +130,7 @@ export default function DashboardShell({
               className="text-[10px] tracking-wide mt-0.5 font-medium"
               style={{ color: C.subtext }}
             >
-              Fabrication Management System
+              Sistem Manajemen Fabrikasi
             </p>
           </div>
           <button
@@ -171,8 +171,8 @@ export default function DashboardShell({
         </nav>
 
         <div className="border-t p-4" style={{ borderColor: C.border }}>
-          <div 
-            className="flex items-center gap-3 mb-3 group cursor-pointer hover:bg-slate-100/50 p-2 -mx-2 rounded-xl transition-colors" 
+          <div
+            className="flex items-center gap-3 mb-3 group cursor-pointer hover:bg-slate-100/50 p-2 -mx-2 rounded-xl transition-colors"
             onClick={() => setIsEditProfileOpen(true)}
             title="Edit Profil"
           >

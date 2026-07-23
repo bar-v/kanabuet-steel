@@ -83,7 +83,7 @@ export default function LoginPage() {
               Kanabuet Steel
             </span>
             <span className="text-slate-600 text-sm font-medium tracking-wide mt-1">
-              Fabrication Management System
+              Sistem Manajemen Fabrikasi
             </span>
           </div>
         </div>

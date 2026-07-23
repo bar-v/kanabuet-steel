@@ -48,7 +48,7 @@ export default function CustomSelect({
         }`}
         onClick={() => setIsOpen(!isOpen)}
       >
-        <span className={`text-sm ${!selectedOption ? "text-slate-400 font-medium" : "text-slate-800 font-bold"}`}>
+        <span className={`text-sm ${!selectedOption ? "text-slate-400 font-medium" : "text-slate-800 font-medium"}`}>
           {selectedOption ? selectedOption.label : placeholder}
         </span>
         <ChevronDown
@@ -68,7 +68,7 @@ export default function CustomSelect({
                 <div
                   key={opt.value}
                   className={`px-4 py-2.5 text-sm cursor-pointer flex items-center justify-between transition-colors ${
-                    isSelected ? "bg-orange-50 text-orange-700 font-bold" : "text-slate-700 hover:bg-slate-50 font-medium"
+                    isSelected ? "bg-orange-50 text-orange-700 font-semibold" : "text-slate-700 hover:bg-slate-50 font-medium"
                   }`}
                   onClick={() => {
                     onChange(String(opt.value));

@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { Project, ProjectStatus, User } from "@/lib/types/database";
 import DashboardShell from "@/components/layout/DashboardShell";
 import useSWR, { mutate } from "swr";
+import CustomSelect from "@/components/ui/CustomSelect";
 
 import { formatAddressFromNominatim } from "@/lib/utils/formatters";
 
@@ -282,16 +283,15 @@ export default function EditProjectPage({ params }: Props) {
 
           <div>
             <label className="block mb-1.5 text-xs font-bold uppercase tracking-wide" style={{ color: C.muted }}>Supervisor Proyek</label>
-            <select
-              value={supervisorId} onChange={(e) => setSupervisorId(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-lg border text-sm font-medium outline-none focus:border-orange-500 transition-colors"
-              style={{ borderColor: C.border }}
-            >
-              <option value="">Belum Ditugaskan</option>
-              {supervisors.map(s => (
-                <option key={s.user_id} value={s.user_id}>{s.fullname}</option>
-              ))}
-            </select>
+            <CustomSelect
+              value={supervisorId}
+              onChange={setSupervisorId}
+              placeholder="Belum Ditugaskan"
+              options={[
+                { value: "", label: "Belum Ditugaskan" },
+                ...supervisors.map(s => ({ value: s.user_id, label: s.fullname }))
+              ]}
+            />
           </div>
         </div>
 

@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Kanabuet Steel",
     short_name: "Kanabuet",
-    description: "Fabrication Management System untuk Kanabuet Steel",
+    description: "Sistem Manajemen Fabrikasi untuk Kanabuet Steel",
     start_url: "/dashboard",
     display: "standalone",
     background_color: "#FFFFFF",

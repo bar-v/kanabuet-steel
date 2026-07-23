@@ -5,16 +5,16 @@ import { MapContainer, TileLayer, Marker, Circle, useMap, useMapEvents } from "r
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 
-// Fix custom icon issue in Next.js + Leaflet
-if (typeof window !== "undefined") {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  delete (L.Icon.Default.prototype as any)._getIconUrl;
-  L.Icon.Default.mergeOptions({
-    iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
-    iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
-    shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
-  });
-}
+// Explicitly define custom icon to avoid React StrictMode/Next.js prototype patching issues
+const customIcon = typeof window !== "undefined" ? new L.Icon({
+  iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
+  iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
+  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+}) : null;
 
 const DEFAULT_CENTER = { lat: 5.548290, lng: 95.323753 }; // Banda Aceh
 
@@ -34,8 +34,8 @@ function LocationMarker({ position }: { position: { lat: number; lng: number } |
     }
   }, [position, map]);
 
-  return position === null ? null : (
-    <Marker position={position}></Marker>
+  return position === null || !customIcon ? null : (
+    <Marker position={position} icon={customIcon}></Marker>
   );
 }
 
@@ -48,11 +48,11 @@ function InitialLocationMarker({ position, radius }: { position: { lat: number; 
     }
   }, [position, map]);
 
-  if (!position) return null;
+  if (!position || !customIcon) return null;
 
   return (
     <>
-      <Marker position={position} opacity={0.6}></Marker>
+      <Marker position={position} opacity={0.6} icon={customIcon}></Marker>
       <Circle
         center={position}
         radius={radius || 5}

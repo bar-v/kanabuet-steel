@@ -17,6 +17,8 @@ import { createClient } from "@/lib/supabase/client";
 import { formatDate, formatRupiah } from "@/lib/utils/formatters";
 import { C, getStatusStyle, getStatusLabel, getProgressColor } from "@/lib/utils/theme";
 import { useUI } from "@/contexts/UIContext";
+import CustomSelect from "@/components/ui/CustomSelect";
+import MaterialSearchSelect from "@/components/ui/MaterialSearchSelect";
 
 const DynamicMap = dynamic(() => import("@/components/MapPicker"), { ssr: false });
 
@@ -190,24 +192,24 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
     const isPercentageChanged = prog.percentage !== previousPercentage;
 
     if (prog.percentage === 0 && prog.notes?.includes("Tervalidasi")) {
-       allActivities.push({ id: `val-${prog.progress_id}`, type: 'validation', title: "Validasi lokasi berhasil", subtitle: project?.project_name || "", date });
-       if (prog.photo_url) {
-          allActivities.push({ id: `photo-${prog.progress_id}`, type: 'photo', title: "Upload foto dokumentasi (1 foto)", subtitle: project?.project_name || "", date });
-       }
+      allActivities.push({ id: `val-${prog.progress_id}`, type: 'validation', title: "Validasi lokasi berhasil", subtitle: project?.project_name || "", date });
+      if (prog.photo_url) {
+        allActivities.push({ id: `photo-${prog.progress_id}`, type: 'photo', title: "Upload foto dokumentasi (1 foto)", subtitle: project?.project_name || "", date });
+      }
     } else {
-       if (isPercentageChanged && prog.percentage > 0) {
-          allActivities.push({ id: `prog-${prog.progress_id}`, type: 'progress', title: `Update progres ${prog.percentage}%`, subtitle: project?.project_name || "", date });
-       } else if (!isPercentageChanged && !prog.photo_url && !prog.notes && prog.percentage > 0) {
-          allActivities.push({ id: `prog-${prog.progress_id}-fb`, type: 'progress', title: `Update progres ${prog.percentage}%`, subtitle: project?.project_name || "", date });
-       }
+      if (isPercentageChanged && prog.percentage > 0) {
+        allActivities.push({ id: `prog-${prog.progress_id}`, type: 'progress', title: `Update progres ${prog.percentage}%`, subtitle: project?.project_name || "", date });
+      } else if (!isPercentageChanged && !prog.photo_url && !prog.notes && prog.percentage > 0) {
+        allActivities.push({ id: `prog-${prog.progress_id}-fb`, type: 'progress', title: `Update progres ${prog.percentage}%`, subtitle: project?.project_name || "", date });
+      }
 
-       if (prog.photo_url) {
-          const count = prog.photo_url.split(',').length;
-          allActivities.push({ id: `photo-${prog.progress_id}`, type: 'photo', title: `Upload foto dokumentasi (${count} foto)`, subtitle: project?.project_name || "", date });
-       }
-       if (prog.notes && !prog.notes.includes("Tervalidasi") && !prog.notes.includes("Tambahan foto")) {
-          allActivities.push({ id: `note-${prog.progress_id}`, type: 'note', title: `Catatan: ${prog.notes}`, subtitle: project?.project_name || "", date });
-       }
+      if (prog.photo_url) {
+        const count = prog.photo_url.split(',').length;
+        allActivities.push({ id: `photo-${prog.progress_id}`, type: 'photo', title: `Upload foto dokumentasi (${count} foto)`, subtitle: project?.project_name || "", date });
+      }
+      if (prog.notes && !prog.notes.includes("Tervalidasi") && !prog.notes.includes("Tambahan foto")) {
+        allActivities.push({ id: `note-${prog.progress_id}`, type: 'note', title: `Catatan: ${prog.notes}`, subtitle: project?.project_name || "", date });
+      }
     }
   });
 
@@ -221,7 +223,7 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
 
     const title = `Penggunaan ${m.materials?.material_name || "Material"}`;
     const subtitle = `${m.quantity} ${m.materials?.unit || ""}${m.notes ? ` - ${m.notes}` : ""}`;
-    
+
     allActivities.push({ id: `mat-${m.usage_id}`, type: 'material', title, subtitle, date });
   });
 
@@ -238,11 +240,11 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
     if (diffSecs < 60) return `${Math.max(1, diffSecs)} detik lalu`;
     if (diffMins < 60) return `${diffMins} menit lalu`;
     if (diffHours < 24) return `${diffHours} jam lalu`;
-    
+
     if (diffDays === 1) {
       return `Kemarin, ${date.getHours().toString().padStart(2, '0')}.${date.getMinutes().toString().padStart(2, '0')}`;
     }
-    
+
     return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) + `, ${date.getHours().toString().padStart(2, '0')}.${date.getMinutes().toString().padStart(2, '0')}`;
   };
 
@@ -668,19 +670,20 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
               <div className="space-y-1.5">
                 <label className="text-xs font-bold ml-1 text-slate-700">Pilih Material</label>
                 <div className="relative">
-                  <select
-                    className="w-full pl-4 pr-10 py-3 rounded-xl border text-sm font-bold outline-none appearance-none focus:border-orange-500 transition-colors bg-slate-50 border-slate-200"
-                    value={selectedMaterialId}
-                    onChange={(e) => setSelectedMaterialId(e.target.value)}
-                  >
-                    <option value="" disabled>Cari atau pilih material...</option>
-                    {materials.map(m => (
-                      <option key={m.material_id} value={m.material_id} disabled={m.current_stock <= 0}>
-                        {m.material_name}{m.specification ? ` - ${m.specification}` : ''} — Sisa: {m.current_stock} {m.unit} {m.current_stock <= 0 ? '(Habis)' : ''}
-                      </option>
-                    ))}
-                  </select>
-                  <Search size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                  <MaterialSearchSelect
+                    materials={materials.map(m => ({
+                      material_id: m.material_id,
+                      material_name: m.material_name,
+                      specification: m.specification,
+                      current_stock: m.current_stock,
+                      unit: m.unit
+                    }))}
+                    value={selectedMaterialId ? Number(selectedMaterialId) : ""}
+                    onChange={(val) => setSelectedMaterialId(val === "" ? "" : String(val))}
+                    borderColor={C.border}
+                    showStock={true}
+                    disableOutOfStock={true}
+                  />
                 </div>
               </div>
 
@@ -793,23 +796,23 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                       {(photosInDate as PhotoItem[])
-                        .flatMap(photo => photo.photo_url ? photo.photo_url.split(',').map((url: string) => ({...photo, photo_url: url})) : [])
+                        .flatMap(photo => photo.photo_url ? photo.photo_url.split(',').map((url: string) => ({ ...photo, photo_url: url })) : [])
                         .map((photo, i) => (
-                        <div key={`${photo.progress_id}-${i}`} className="group relative rounded-xl overflow-hidden shadow-sm border border-slate-200 bg-white aspect-square">
-                          <img src={photo.photo_url} alt="Dokumentasi" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
-                            <span className="text-xs font-black text-white">{photo.percentage}% Progress</span>
-                            {photo.notes && <p className="text-[10px] text-slate-200 line-clamp-2 mt-1 leading-snug">{photo.notes}</p>}
-                            <a href={photo.photo_url} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-[10px] font-bold text-sky-400 hover:text-sky-300">
-                              Buka Penuh <ChevronRight size={10} />
-                            </a>
+                          <div key={`${photo.progress_id}-${i}`} className="group relative rounded-xl overflow-hidden shadow-sm border border-slate-200 bg-white aspect-square">
+                            <img src={photo.photo_url} alt="Dokumentasi" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
+                              <span className="text-xs font-black text-white">{photo.percentage}% Progress</span>
+                              {photo.notes && <p className="text-[10px] text-slate-200 line-clamp-2 mt-1 leading-snug">{photo.notes}</p>}
+                              <a href={photo.photo_url} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-[10px] font-bold text-sky-400 hover:text-sky-300">
+                                Buka Penuh <ChevronRight size={10} />
+                              </a>
+                            </div>
+                            {/* Always visible percentage badge */}
+                            <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-2 py-1 rounded-md">
+                              <span className="text-[10px] font-bold text-white">{photo.percentage}%</span>
+                            </div>
                           </div>
-                          {/* Always visible percentage badge */}
-                          <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-2 py-1 rounded-md">
-                            <span className="text-[10px] font-bold text-white">{photo.percentage}%</span>
-                          </div>
-                        </div>
-                      ))}
+                        ))}
                     </div>
                   </div>
                 ))
