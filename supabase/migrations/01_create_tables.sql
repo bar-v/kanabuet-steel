@@ -176,10 +176,6 @@ CREATE TABLE restocks (
                     REFERENCES materials(material_id)
                     ON DELETE CASCADE,
 
-    supplier_id BIGINT
-                    REFERENCES suppliers(supplier_id)
-                    ON DELETE SET NULL,
-
     performed_by BIGINT
                     REFERENCES users(user_id)
                     ON DELETE SET NULL,

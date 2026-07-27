@@ -330,7 +330,7 @@ export default function UpdateProgressPage() {
       mutate('/api/supervisor/projects');
       mutate('/api/supervisor/progress');
     } catch (err: unknown) {
-      showToast("Gagal menyimpan progress: " + (err instanceof Error ? err.message : String(err)), "error");
+      showToast("Gagal menyimpan progress: " + ((err as any)?.message || ((err as any)?.message || ((err as any)?.message || String(err)))), "error");
     } finally {
       setIsSubmitting(false);
     }

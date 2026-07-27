@@ -209,6 +209,35 @@ export default function LoginPage() {
               )}
             </button>
           </form>
+
+          {/* Tracking Form Section */}
+          <div className="mt-8 pt-6 border-t border-slate-200">
+            <h2 className="text-sm font-bold text-slate-900 mb-2 text-center">Lacak Proyek Anda</h2>
+            <p className="text-xs text-slate-500 text-center mb-4 leading-relaxed px-2">
+              Masukkan kode pelacakan untuk melihat progres proyek Anda secara publik.
+            </p>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const code = (e.currentTarget.elements.namedItem("tracking_code") as HTMLInputElement).value;
+              if (code.trim()) {
+                router.push(`/track/${code.trim()}`);
+              }
+            }} className="flex gap-2">
+              <input
+                type="text"
+                name="tracking_code"
+                placeholder="Kode Resi Proyek"
+                required
+                className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-orange-500 focus:bg-white focus:ring-1 focus:ring-orange-500 transition-colors"
+              />
+              <button
+                type="submit"
+                className="px-5 py-2.5 bg-slate-800 hover:bg-slate-900 text-white text-sm font-bold rounded-lg transition-colors shadow-sm"
+              >
+                Lacak
+              </button>
+            </form>
+          </div>
         </div>
 
         {/* Footer note */}

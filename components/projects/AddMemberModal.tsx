@@ -106,7 +106,7 @@ export default function AddMemberModal({ projectId, onClose, onSuccess }: AddMem
       onSuccess();
       showToast('Berhasil menambah anggota', "success");
     } catch (err: unknown) {
-      showToast('Gagal menambah anggota: ' + (err instanceof Error ? err.message : String(err)), "error");
+      showToast('Gagal menambah anggota: ' + ((err as any)?.message || ((err as any)?.message || ((err as any)?.message || String(err)))), "error");
     } finally {
       setIsSubmitting(false);
     }

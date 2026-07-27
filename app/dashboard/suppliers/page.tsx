@@ -83,7 +83,7 @@ export default function SupplierManagementPage() {
       mutate('admin_suppliers');
       showToast(`Berhasil menyimpan supplier ${formName}`, "success");
     } catch (err: unknown) {
-      showToast("Gagal menyimpan: " + (err instanceof Error ? err.message : String(err)), "error");
+      showToast("Gagal menyimpan: " + ((err as any)?.message || ((err as any)?.message || ((err as any)?.message || String(err)))), "error");
     } finally {
       setIsSubmitting(false);
     }

@@ -286,7 +286,7 @@ export default function MaterialManagementPage() {
       mutate('admin_materials');
       showToast(`Berhasil menyimpan material ${formName}`, "success");
     } catch (err: unknown) {
-      showToast("Gagal menyimpan: " + (err instanceof Error ? err.message : String(err)), "error");
+      showToast("Gagal menyimpan: " + ((err as any)?.message || ((err as any)?.message || ((err as any)?.message || String(err)))), "error");
     } finally {
       setIsSubmitting(false);
     }
@@ -312,7 +312,6 @@ export default function MaterialManagementPage() {
     try {
       const { error } = await supabase.from("restocks").insert([{
         material_id: restockMaterial.material_id,
-        supplier_id: restockMaterial.supplier_id,
         quantity: Number(restockQty),
         purchase_unit_price: finalPurchasePrice,
         total_purchase_price: finalPurchasePrice * Number(restockQty),
@@ -332,7 +331,7 @@ export default function MaterialManagementPage() {
       mutate('admin_materials');
       showToast(`Berhasil restock material`, "success");
     } catch (err: unknown) {
-      showToast("Gagal restock: " + (err instanceof Error ? err.message : String(err)), "error");
+      showToast("Gagal restock: " + ((err as any)?.message || ((err as any)?.message || ((err as any)?.message || String(err)))), "error");
     } finally {
       setIsSubmitting(false);
     }

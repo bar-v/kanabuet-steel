@@ -207,7 +207,7 @@ export default function EditProjectPage({ params }: Props) {
       router.push(`/dashboard/projects/${projectId}`);
       router.refresh();
     } catch (err: unknown) {
-      showToast("Gagal menyimpan: " + (err instanceof Error ? err.message : String(err)), "error");
+      showToast("Gagal menyimpan: " + ((err as any)?.message || ((err as any)?.message || String(err))), "error");
     } finally {
       setIsSubmitting(false);
     }

@@ -7,7 +7,7 @@ import {
   MapPin, CalendarClock, UserCircle2,
   Activity, ChevronRight, Users, Edit2,
   Package, AlertTriangle, ImageIcon, Plus, Navigation,
-  Search, CheckCircle2, X, Trash2, Upload, FileText
+  Search, CheckCircle2, X, Trash2, Upload, FileText, Link2
 } from "lucide-react";
 import type { Project, ProjectMember, Material } from "@/lib/types/database";
 import useSWR, { mutate } from "swr";
@@ -130,6 +130,16 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
     } finally {
       setIsSubmittingUsage(false);
     }
+  };
+
+  const handleCopyLink = () => {
+    if (!project?.tracking_code) {
+      showToast("Kode pelacakan belum tersedia", "error");
+      return;
+    }
+    const url = `${window.location.origin}/track/${project.tracking_code}`;
+    navigator.clipboard.writeText(url);
+    showToast("Link pelacakan disalin ke clipboard", "success");
   };
 
   if (isLoading) {
@@ -261,12 +271,21 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
                 {getStatusLabel(project.status)}
               </span>
               {role === "owner" && (
-                <button
-                  onClick={() => router.push(`/dashboard/projects/${projectId}/edit`)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-xs font-bold transition-all active:scale-95"
-                >
-                  <Edit2 size={13} /> <span className="hidden sm:inline">Edit</span>
-                </button>
+                <>
+                  <button
+                    onClick={handleCopyLink}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-bold transition-all active:scale-95"
+                    title="Salin Link Publik"
+                  >
+                    <Link2 size={13} /> <span className="hidden sm:inline">Bagikan</span>
+                  </button>
+                  <button
+                    onClick={() => router.push(`/dashboard/projects/${projectId}/edit`)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-xs font-bold transition-all active:scale-95"
+                  >
+                    <Edit2 size={13} /> <span className="hidden sm:inline">Edit</span>
+                  </button>
+                </>
               )}
             </div>
           </div>

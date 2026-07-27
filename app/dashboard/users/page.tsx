@@ -154,7 +154,7 @@ export default function UserManagementPage() {
       if (errorObj?.code === "23505") {
         setErrorMessage("Gagal menyimpan: Email ini sudah terdaftar. Silakan gunakan alamat email lain.");
       } else {
-        setErrorMessage("Gagal menyimpan: " + (errorObj?.message || String(err)));
+        setErrorMessage("Gagal menyimpan: " + (errorObj?.message || ((err as any)?.message || ((err as any)?.message || String(err)))));
       }
     } finally {
       setIsSubmitting(false);

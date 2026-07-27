@@ -177,7 +177,7 @@ export default function CreateProjectModal({ onClose, onSuccess }: CreateProject
       onSuccess();
       showToast("Berhasil menyimpan proyek", "success");
     } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : String(error);
+      const msg = ((error as any)?.message || String(error));
       showToast(`Gagal menyimpan proyek: ${msg}`, "error");
       console.error(error);
     } finally {

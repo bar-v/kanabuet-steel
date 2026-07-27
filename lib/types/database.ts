@@ -24,6 +24,7 @@ export interface User {
 //  Tabel: projects 
 export interface Project {
   project_id: number;
+  tracking_code: string;
   project_name: string;
   client_name: string;
   client_phone: string | null;
@@ -129,7 +130,6 @@ export interface MaterialUsageWithDetails extends MaterialUsage {
 export interface Restock {
   restock_id: number;
   material_id: number;
-  supplier_id: number | null;
   quantity: number;
   date: string;
   purchase_unit_price: number;

@@ -63,7 +63,7 @@ export default function ProjectManagementPage() {
       mutate('admin_dashboard_data');
       showToast(`Proyek ${projectName} berhasil dihapus`, "success");
     } catch (err: unknown) {
-      showToast("Gagal menghapus proyek: " + (err instanceof Error ? err.message : String(err)), "error");
+      showToast("Gagal menghapus proyek: " + ((err as any)?.message || ((err as any)?.message || ((err as any)?.message || String(err)))), "error");
     } finally {
       setDeletingId(null);
     }
