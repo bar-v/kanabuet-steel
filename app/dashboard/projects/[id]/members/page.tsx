@@ -299,8 +299,8 @@ export default function ProjectMembersPage({ params }: Props) {
                 type="button"
                 onClick={() => { setFormMode('dropdown'); setSelectedWorker(null); }}
                 className={`flex-1 py-2 rounded-lg text-sm font-semibold border transition-all ${formMode === 'dropdown'
-                    ? 'bg-orange-500 border-orange-500 text-white'
-                    : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                  ? 'bg-orange-500 border-orange-500 text-white'
+                  : 'border-slate-200 text-slate-600 hover:bg-slate-50'
                   }`}
               >
                 Pilih dari Histori
@@ -309,8 +309,8 @@ export default function ProjectMembersPage({ params }: Props) {
                 type="button"
                 onClick={() => { setFormMode('new'); setSelectedWorker(null); }}
                 className={`flex-1 py-2 rounded-lg text-sm font-semibold border transition-all ${formMode === 'new'
-                    ? 'bg-orange-500 border-orange-500 text-white'
-                    : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                  ? 'bg-orange-500 border-orange-500 text-white'
+                  : 'border-slate-200 text-slate-600 hover:bg-slate-50'
                   }`}
               >
                 + Pekerja Baru

@@ -8,7 +8,7 @@ import dynamic from "next/dynamic";
 import { formatDate } from "@/lib/utils/formatters";
 import { C, getStatusStyle, getStatusLabel, getProgressColor } from "@/lib/utils/theme";
 
-const DynamicMap = dynamic(() => import("@/components/MapPicker"), { ssr: false });
+// const DynamicMap = dynamic(() => import("@/components/MapPicker"), { ssr: false });
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -16,7 +16,9 @@ export default function PublicTrackingPage({ params }: { params: Promise<{ code:
   const resolvedParams = use(params);
   const router = useRouter();
 
-  const { data, isLoading, error } = useSWR(`/api/track/${resolvedParams.code}`, fetcher);
+  const { data, isLoading, error } = useSWR(`/api/track/${resolvedParams.code}`, fetcher, {
+    dedupingInterval: 7 * 24 * 60 * 60 * 1000, // 1 minggu
+  });
 
   if (isLoading) {
     return (

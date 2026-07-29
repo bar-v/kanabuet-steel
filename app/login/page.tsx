@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { loginAction } from "./actions";
+import InstallPwaButton from "@/components/ui/InstallPwaButton";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -237,6 +238,11 @@ export default function LoginPage() {
                 Lacak
               </button>
             </form>
+          </div>
+
+          {/* PWA Install Button Section */}
+          <div className="mt-4 pt-4 border-t border-slate-100">
+            <InstallPwaButton />
           </div>
         </div>
 
