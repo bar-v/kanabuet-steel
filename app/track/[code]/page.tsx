@@ -17,7 +17,10 @@ export default function PublicTrackingPage({ params }: { params: Promise<{ code:
   const router = useRouter();
 
   const { data, isLoading, error } = useSWR(`/api/track/${resolvedParams.code}`, fetcher, {
-    dedupingInterval: 7 * 24 * 60 * 60 * 1000, // 1 minggu
+    revalidateOnFocus: true,
+    revalidateOnReconnect: true,
+    keepPreviousData: true,
+    refreshInterval: 15000,
   });
 
   if (isLoading) {
@@ -153,7 +156,7 @@ export default function PublicTrackingPage({ params }: { params: Promise<{ code:
 
                         {p.photo_url && (
                           <div className="mt-4 flex flex-wrap gap-2">
-                            {p.photo_url.split(',').map((url: string, idx: number) => (
+                            {p.photo_url.split(',').map((url: string) => url.trim()).filter(Boolean).map((url: string, idx: number) => (
                               <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="block relative group rounded-lg overflow-hidden border border-slate-200">
                                 <img src={url} alt={`Dokumentasi ${idx + 1}`} className="w-20 h-20 object-cover group-hover:scale-110 transition-transform duration-300" />
                                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />

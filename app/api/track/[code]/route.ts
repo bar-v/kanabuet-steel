@@ -34,9 +34,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ code
       return NextResponse.json({ error: 'Gagal mengambil data progress' }, { status: 500 });
     }
 
-    // Determine latest progress
+    // Determine latest progress (most recent entry from ordered history)
     const latestProgress = progressHistory && progressHistory.length > 0 
-      ? Math.max(...progressHistory.map(p => p.percentage))
+      ? progressHistory[0].percentage
       : 0;
 
     return NextResponse.json({
@@ -48,7 +48,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ code
       progressHistory: progressHistory || []
     }, {
       headers: {
-        'Cache-Control': 'public, s-maxage=604800, stale-while-revalidate=86400',
+        'Cache-Control': 'public, max-age=10, stale-while-revalidate=300',
       }
     });
 

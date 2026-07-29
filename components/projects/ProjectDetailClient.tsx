@@ -7,7 +7,7 @@ import {
   MapPin, CalendarClock, UserCircle2,
   Activity, ChevronRight, Users, Edit2,
   Package, AlertTriangle, ImageIcon, Plus, Navigation,
-  Search, CheckCircle2, X, Trash2, Upload, FileText, Link2
+  Search, CheckCircle2, X, Trash2, Upload, FileText, Link2, Copy
 } from "lucide-react";
 import type { Project, ProjectMember, Material } from "@/lib/types/database";
 import useSWR, { mutate } from "swr";
@@ -274,10 +274,11 @@ export default function ProjectDetailClient({ projectId, role }: ProjectDetailCl
                 <>
                   <button
                     onClick={handleCopyLink}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-bold transition-all active:scale-95"
-                    title="Salin Link Publik"
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-lg text-xs font-mono font-semibold transition-all active:scale-95 group"
+                    title="Klik untuk menyalin link pelacakan publik"
                   >
-                    <Link2 size={13} /> <span className="hidden sm:inline">Bagikan</span>
+                    <Copy size={13} className="text-slate-400 group-hover:text-orange-500 transition-colors shrink-0" />
+                    <span>{project.tracking_code || "Salin Link"}</span>
                   </button>
                   <button
                     onClick={() => router.push(`/dashboard/projects/${projectId}/edit`)}
